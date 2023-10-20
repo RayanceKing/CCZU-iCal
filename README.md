@@ -28,7 +28,7 @@ source ./.venv/bin/activate  # Linux
 pip install -r requirements.txt
 
 # 运行
-python script.py
+python script_zh.py
 
 # 然后根据提示一次键入
 * 教务系统学号 + 密码
@@ -51,7 +51,7 @@ python script.py
 - [x]  课前提醒功能
 - [x]  课程的单双周差异，及特殊情况
 - [x]  提供周次信息
-- [ ]  搭建网页，实现可视化日历**订阅**，降低使用门槛
+- [ ]  打包成软件，实现可视化日历**订阅**，降低使用门槛
 
 ## ideal Get
 
