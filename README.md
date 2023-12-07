@@ -22,7 +22,7 @@ cd CCZU-iCal
 # 创建虚拟环境
 python -m venv .venv
 .\.venv\Scripts\activate     # Windows
-source ./.venv/bin/activate  # Linux
+source ./.venv/bin/activate  # Linux & macOS
 
 # 安装依赖
 pip install -r requirements.txt
@@ -53,6 +53,3 @@ python script_zh.py
 - [x]  提供周次信息
 - [ ]  打包成软件，实现可视化日历**订阅**，降低使用门槛
 
-## ideal Get
-
-:pray: 贴个友链： [Gill Blog](https://chanjh.com/post/0031/) (感谢这位大佬提供的ideal)
