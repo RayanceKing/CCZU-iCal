@@ -14,8 +14,8 @@ def loginCookie(user: str, passwd: str) -> dict:  # 定义函数，传入学号�
     session = requests.session()
     url = "http://jwcas.cczu.edu.cn/login"
 
-    # Get the random data to login
-    try:  # 获取随机信息
+    # 获取随机信息
+    try:  
         html = session.get(url, headers=headers)
         html.raise_for_status()
         html.encoding = html.apparent_encoding
@@ -26,11 +26,10 @@ def loginCookie(user: str, passwd: str) -> dict:  # 定义函数，传入学号�
 
     # 初始化字符串，使其可用于xpath的函数
     html = etree.HTML(html)
-    # Get the name and value of random data
+    # 获取随机数据的名称和值
     # Type of gName, gValue: list
     gName = html.xpath('//input[@type="hidden"]/@name')  # 获取随机信息的name
     gValue = html.xpath('//input[@type="hidden"]/@value')  # 获取随机信息的value
-
     gAll = {}  # 创建字典，用于存储随机信息
     for i in range(3):  # 将随机信息存入字典
         gAll[gName[i]] = gValue[i]  # 将随机信息的name和value存入字典
