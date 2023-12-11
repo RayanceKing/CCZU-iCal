@@ -73,7 +73,7 @@ def loginCookie(user: str, passwd: str) -> dict:  # 定义函数，传入学号�
 
 # 定义函数，传入学号和密码，返回Cookies
 
-
+# 定义函数，传入Cookies，返回课表
 def getDom(cookies: dict) -> list:
     url = "http://219.230.159.132/web_jxrw/cx_kb_xsgrkb.aspx"
 
@@ -86,14 +86,14 @@ def getDom(cookies: dict) -> list:
 
 
 def classHandler(text):
-    # structure text
+    # 结构文本
     textDom = etree.HTML(text)
     tables = textDom.xpath('//div/table')
     tableup, tabledown = tables[1], tables[2]
-    # extract all class names
+    # 提取所有课程名
     classNameList = tableup.xpath(
         './tr[@class="dg1-item"]/td[position()=2]/text()')
-    # extract class info of from the table
+    # 从表格中提取课程信息
     classmatrix = [tr.xpath('./td[position()>1]/text()')
                    for tr in tabledown.xpath('tr[position()>1]')]
     classmatrixT = [each for each in zip(*classmatrix)]
@@ -102,13 +102,14 @@ def classHandler(text):
     courseList = dict()
     global courseInfoRes
 
-    # day: day of week / courses: all courses in a day
+    # day: 一周中的某一天 / courses: 一天内的所有课程
     for day, courses in enumerate(classmatrixT):
-        # time: the rank of lesson / course_cb: one item in table cell
+        # time: 课程的排名 / course_cb: 表单元格中的一个项目
         for time, course_cb in enumerate(courses):
             course_list = list(filter(None, course_cb.split('/')))
             for course in course_list:
                 id = uuid.uuid3(uuid.NAMESPACE_DNS, course+str(day)).hex
+                # 如果课程不为空且不在课程信息中，将其添加到课程信息中
                 if course != '\xa0' and (not time or id not in courseInfo.keys()):
                     nl = list(
                         filter(lambda x: course.startswith(x), classNameList))
@@ -116,9 +117,11 @@ def classHandler(text):
                         nl) == 1, "Unable to resolve course name correctly"
                     classname = nl[0]
                     course = course.replace(classname, '').strip()
+                    # 正则表达式匹配课程信息
                     res = re.match(
-                        r'(\w+)? *([单双]?) *((\d+-\d+,?)+)', course)
+                        r'(\startWeek+)? *([单双]?) *((\d+-\d+,?)+)', course)
                     assert res, "Course information parsing abnormal"
+                    # 将课程信息添加到课程信息中
                     info = {
                         'classname': classname,
                         'classtime': [time+1],
@@ -128,33 +131,41 @@ def classHandler(text):
                         'classroom': [res.group(1)],
                     }
                     courseInfo[id] = info
+                # 如果课程不为空且在课程信息中，将其添加到课程信息中    
                 elif course != '\xa0' and id in courseInfo.keys():
                     courseInfo[id]['classtime'].append(time+1)
-
+    
+    # 合并同一课程的不同上课时间
     for course in courseInfo.values():
         purecourse = {key: value for key,
                       value in course.items() if key != "classroom"}
+        # 如果课程已经存在，将教室信息添加到课程信息中
         if str(purecourse) in courseList:
             courseList[str(purecourse)]["classroom"].append(
                 course["classroom"][0])
+        # 如果课程不存在，将课程信息添加到课程列表中
         else:
             courseList[str(purecourse)] = course
-
+    # 将课程列表转换为课程信息列表
     courseInfoRes = [course for course in courseList.values()]
     print("课表格式化成功")
 
-
+# 定义函数，传入课表，返回ics文件
 def setReminder(reminder):
+    # reminder: 课前提醒时间
     global timeReminder
     reminder = 15 if reminder == '' else reminder
+    # 将分钟转换为ics文件中的时间格式
     time_tuple = re.match(r"(([\d ]+) days, )*(\d+):(\d+):(\d+)",
                           str(datetime.timedelta(minutes=int(reminder)))).groups()[1:]
+    # 将时间格式转换为ics文件中的时间格式
     time_map = map(lambda x: x if x else "0", time_tuple)
     timeReminder = "-P{}DT{}H{}M{}S".format(*list(time_map))
     print("SetReminder:", timeReminder)
 
-
+# 定义函数，传入课表，返回ics文件
 def setClassTime():
+    # 从配置文件中读取上课时间
     data = []
     with open('conf_classTime.json', 'r') as f:
         data = json.load(f)
@@ -168,42 +179,40 @@ def save(string):
     f.write(string.encode("utf-8"))
     f.close()
 
-
+# 定义类，传入课表，返回ics文件
 class ICal(object):
     def __init__(self, firstWeekDate, schedule, courseInfo):
         self.firstWeekDate = firstWeekDate
         self.schedule = schedule
         self.courseInfo = courseInfo
-
+    # 传入字符串日期，返回类实例
     @classmethod
     def withStrDate(cls, strdate, *args):
         firstWeekDate = time.strptime(strdate, "%Y%m%d")
         return cls(firstWeekDate, *args)
-
+    # 传入时间戳，返回类实例
     def handler(self, info):
         weekday = info["day"]
         oe = info["oe"]
         firstDate = datetime.datetime.fromtimestamp(
             int(time.mktime(self.firstWeekDate)))
         info['daylist'] = list()
-
+        # 将课程的周数转换为日期
         for weeks in info["week"]:
             startWeek, endWeek = map(int, weeks.split('-'))
             startDate, endDate = firstDate + datetime.timedelta(days=(float(
                 (startWeek - 1) * 7) + weekday - 1)), firstDate + datetime.timedelta(days=(float((endWeek - 1) * 7) + weekday - 1))
 
-            status = True
-            date = startDate
-            w = startWeek
-            while (status):
-                if (oe == 3 or (oe == 1) and (w % 2 == 1) or (oe == 2) and (w % 2 == 0)):
-                    info['daylist'].append(date.strftime("%Y%m%d"))
-                date = date + datetime.timedelta(days=7.0)
-                w = w + 1
-                if (date > endDate):
-                    status = False
+            # 如果课程为单周或双周，将其添加到课程信息中
+            while (True):
+                if (oe == 3 or (oe == 1) and (startWeek % 2 == 1) or (oe == 2) and (startWeek % 2 == 0)):
+                    info['daylist'].append(startData.strftime("%Y%m%d"))
+                startData = startData + datetime.timedelta(days=7.0)
+                startWeek = startWeek + 1
+                if (startData > endDate):
+                    break
         return info
-
+    # 传入课表，返回ics文件
     def to_ical(self):
         prop = {
             'PRODID': '-//Google Inc//Google Calendar 70.9054//EN',
@@ -213,6 +222,7 @@ class ICal(object):
             'X-WR-CALNAME': '课程表',
             'X-WR-TIMEZONE': 'Asia/Shanghai'
         }
+        # 将课表信息添加到ics文件中
         cal = Calendar()
         for key, value in prop.items():
             cal.add(key, value)
@@ -236,6 +246,7 @@ class ICal(object):
                     'TRANSP': 'OPAQUE',
                     'X-APPLE-TRAVEL-ADVISORY-BEHAVIOR': 'AUTOMATIC'
                 }
+                # 如果课前提醒时间不为空，将其添加到课程信息中
                 sub_prop_alarm = {
                     'ACTION': 'DISPLAY',
                     'DESCRIPTION': 'This is an event reminder',
@@ -250,8 +261,8 @@ class ICal(object):
                 event.add_component(alarm)
                 cal.add_component(event)
 
-        # weekly info
-        fweek = datetime.date.fromtimestamp(
+        # 每周信息
+        fweek = datetime.startData.fromtimestamp(
             int(time.mktime(self.firstWeekDate))) - datetime.timedelta(days=1.0)
         createTime = datetime.datetime.now()
         for _ in range(18):
@@ -275,7 +286,7 @@ class ICal(object):
 
         return bytes.decode(cal.to_ical(), encoding='utf-8').replace('\r\n', '\n').strip()
 
-
+# 主函数
 if __name__ == "__main__":
     firstWeekDate = None
     classTimeList = None
@@ -311,7 +322,7 @@ if __name__ == "__main__":
     setClassTime()
 
     firstWeekDate = input(
-        '请输入此学期第一周的星期一日期(eg 20230905)：')  # Date of the first week of Monday
+        '请输入此学期第一周的星期一日期(eg 20230904)：')  # 周一第一周的开始数据
     print("正在配置第一周周一日期...")
     print("SetFirstWeekDate:", firstWeekDate)
 
@@ -322,6 +333,6 @@ if __name__ == "__main__":
 
     print("正在生成ics文件...")
     iCal = ICal.withStrDate(firstWeekDate, classTimeList, courseInfoRes)
-    with open("./class.ics", "w", encoding="utf-8") as f:
+    with open("./class.ics", "startWeek", encoding="utf-8") as f:
         f.write(iCal.to_ical())
     print("文件保存成功")
