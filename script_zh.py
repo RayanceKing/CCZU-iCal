@@ -10,17 +10,17 @@ from random import Random
 from lxml import etree
 
 
-def loginCookie(user: str, passwd: str) -> dict:
+def loginCookie(user: str, passwd: str) -> dict:  # 定义函数，传入学号和密码，返回Cookies
     session = requests.session()
     url = "http://jwcas.cczu.edu.cn/login"
 
     # Get the random data to login
-    try:
+    try:  # 获取随机信息
         html = session.get(url, headers=headers)
         html.raise_for_status()
         html.encoding = html.apparent_encoding
         html = html.text
-    except:
+    except:  # 如果获取失败，退出程序
         print("从登录页获取随机信息失败")
         sys.exit(0)
 
@@ -28,14 +28,14 @@ def loginCookie(user: str, passwd: str) -> dict:
     html = etree.HTML(html)
     # Get the name and value of random data
     # Type of gName, gValue: list
-    gName = html.xpath('//input[@type="hidden"]/@name')
-    gValue = html.xpath('//input[@type="hidden"]/@value')
+    gName = html.xpath('//input[@type="hidden"]/@name')  # 获取随机信息的name
+    gValue = html.xpath('//input[@type="hidden"]/@value')  # 获取随机信息的value
 
-    gAll = {}
-    for i in range(3):
-        gAll[gName[i]] = gValue[i]
+    gAll = {}  # 创建字典，用于存储随机信息
+    for i in range(3):  # 将随机信息存入字典
+        gAll[gName[i]] = gValue[i]  # 将随机信息的name和value存入字典
 
-    # Post data
+    # 发送数据
     data = {
         'username': user,
         'password': passwd,
@@ -45,13 +45,13 @@ def loginCookie(user: str, passwd: str) -> dict:
         '_eventId': gAll['_eventId']
     }
 
-    # Official Login
+    # 官方登录
     sc = session.post(url, headers=headers, data=data)
     if not sc.cookies.get_dict():
         print("用户名或密码错误，请检查重试")
         sys.exit(0)
 
-    # Intercept jump link
+    # 拦截跳转链接
     try:
         tmp = session.get(
             'http://jwcas.cczu.edu.cn/login?service=http://219.230.159.132/login7_jwgl.aspx', headers=headers)
@@ -61,16 +61,18 @@ def loginCookie(user: str, passwd: str) -> dict:
         print("获取跳转链接失败")
         sys.exit(0)
 
-    # Get Cookies we need from DirectPage
+    # 从DirectPage获取我们需要的Cookie
     try:
         tmp2 = session.get(Rurl, headers=headers)
     except:
         print("获取实用Cookies失败")
         sys.exit(0)
 
-    # Extract the cookies dictionary and return it.
+    # 提取cookie字典并返回它。
     print("获取Cookies成功")
     return tmp2.cookies.get_dict()
+
+# 定义函数，传入学号和密码，返回Cookies
 
 
 def getDom(cookies: dict) -> list:
@@ -146,7 +148,8 @@ def classHandler(text):
 def setReminder(reminder):
     global timeReminder
     reminder = 15 if reminder == '' else reminder
-    time_tuple = re.match(r"(([\d ]+) days, )*(\d+):(\d+):(\d+)", str(datetime.timedelta(minutes=int(reminder)))).groups()[1:]
+    time_tuple = re.match(r"(([\d ]+) days, )*(\d+):(\d+):(\d+)",
+                          str(datetime.timedelta(minutes=int(reminder)))).groups()[1:]
     time_map = map(lambda x: x if x else "0", time_tuple)
     timeReminder = "-P{}DT{}H{}M{}S".format(*list(time_map))
     print("SetReminder:", timeReminder)
@@ -193,12 +196,12 @@ class ICal(object):
             status = True
             date = startDate
             w = startWeek
-            while(status):
-                if(oe == 3 or (oe == 1) and (w % 2 == 1) or (oe == 2) and(w % 2 == 0)):
+            while (status):
+                if (oe == 3 or (oe == 1) and (w % 2 == 1) or (oe == 2) and (w % 2 == 0)):
                     info['daylist'].append(date.strftime("%Y%m%d"))
                 date = date + datetime.timedelta(days=7.0)
                 w = w + 1
-                if(date > endDate):
+                if (date > endDate):
                     status = False
         return info
 
@@ -249,7 +252,8 @@ class ICal(object):
                 cal.add_component(event)
 
         # weekly info
-        fweek = datetime.date.fromtimestamp(int(time.mktime(self.firstWeekDate))) - datetime.timedelta(days=1.0)
+        fweek = datetime.date.fromtimestamp(
+            int(time.mktime(self.firstWeekDate))) - datetime.timedelta(days=1.0)
         createTime = datetime.datetime.now()
         for _ in range(18):
             sub_prop = {
