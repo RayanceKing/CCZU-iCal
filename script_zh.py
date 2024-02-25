@@ -15,7 +15,7 @@ def loginCookie(user: str, passwd: str) -> dict:  # 定义函数，传入学号�
     url = "http://jwcas.cczu.edu.cn/login"
 
     # 获取随机信息
-    try:  
+    try:
         html = session.get(url, headers=headers)
         html.raise_for_status()
         html.encoding = html.apparent_encoding
@@ -74,6 +74,8 @@ def loginCookie(user: str, passwd: str) -> dict:  # 定义函数，传入学号�
 # 定义函数，传入学号和密码，返回Cookies
 
 # 定义函数，传入Cookies，返回课表
+
+
 def getDom(cookies: dict) -> list:
     url = "http://219.230.159.132/web_jxrw/cx_kb_xsgrkb.aspx"
 
@@ -120,7 +122,7 @@ def classHandler(text):
                     # 正则表达式匹配课程信息
                     res = re.match(
                         r'(\startWeek+)? *([单双]?) *((\d+-\d+,?)+)', course)
-                    assert res, "Course information parsing abnormal"
+                    assert res, "课程信息解析异常"
                     # 将课程信息添加到课程信息中
                     info = {
                         'classname': classname,
@@ -131,10 +133,10 @@ def classHandler(text):
                         'classroom': [res.group(1)],
                     }
                     courseInfo[id] = info
-                # 如果课程不为空且在课程信息中，将其添加到课程信息中    
+                # 如果课程不为空且在课程信息中，将其添加到课程信息中
                 elif course != '\xa0' and id in courseInfo.keys():
                     courseInfo[id]['classtime'].append(time+1)
-    
+
     # 合并同一课程的不同上课时间
     for course in courseInfo.values():
         purecourse = {key: value for key,
@@ -151,6 +153,8 @@ def classHandler(text):
     print("课表格式化成功")
 
 # 定义函数，传入课表，返回ics文件
+
+
 def setReminder(reminder):
     # reminder: 课前提醒时间
     global timeReminder
@@ -164,6 +168,8 @@ def setReminder(reminder):
     print("SetReminder:", timeReminder)
 
 # 定义函数，传入课表，返回ics文件
+
+
 def setClassTime():
     # 从配置文件中读取上课时间
     data = []
@@ -180,17 +186,21 @@ def save(string):
     f.close()
 
 # 定义类，传入课表，返回ics文件
+
+
 class ICal(object):
     def __init__(self, firstWeekDate, schedule, courseInfo):
         self.firstWeekDate = firstWeekDate
         self.schedule = schedule
         self.courseInfo = courseInfo
     # 传入字符串日期，返回类实例
+
     @classmethod
     def withStrDate(cls, strdate, *args):
         firstWeekDate = time.strptime(strdate, "%Y%m%d")
         return cls(firstWeekDate, *args)
     # 传入时间戳，返回类实例
+
     def handler(self, info):
         weekday = info["day"]
         oe = info["oe"]
@@ -213,6 +223,7 @@ class ICal(object):
                     break
         return info
     # 传入课表，返回ics文件
+
     def to_ical(self):
         prop = {
             'PRODID': '-//Google Inc//Google Calendar 70.9054//EN',
@@ -285,6 +296,7 @@ class ICal(object):
             cal.add_component(event)
 
         return bytes.decode(cal.to_ical(), encoding='utf-8').replace('\r\n', '\n').strip()
+
 
 # 主函数
 if __name__ == "__main__":
