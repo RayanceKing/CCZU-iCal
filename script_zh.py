@@ -127,7 +127,7 @@ def classHandler(text):
                     classname = nl[0]
                     course = course.replace(classname, "").strip()
                     # 正则表达式匹配课程信息
-                    res = re.match(r"(\w+)? *([单双]?) *((\d+-\d+,?)+)", course)
+                    res = re.match(r"(\S+)? *([单双]?) *((\d+-\d+,?)+)", course)
                     assert res, "课程信息解析异常"
                     # 将课程信息添加到课程信息中
                     info = {
@@ -300,7 +300,7 @@ class ICal(object):
                 cal.add_component(event)
 
         # 每周信息
-        fweek = datetime.startData.fromtimestamp(
+        fweek = datetime.datetime.fromtimestamp(
             int(time.mktime(self.firstWeekDate))
         ) - datetime.timedelta(days=1.0)
         createTime = datetime.datetime.now()
@@ -378,6 +378,6 @@ if __name__ == "__main__":
 
     print("正在生成ics文件...")
     iCal = ICal.withStrDate(firstWeekDate, classTimeList, courseInfoRes)
-    with open("./class.ics", "startWeek", encoding="utf-8") as f:
+    with open("./class.ics", "w", encoding="utf-8") as f:
         f.write(iCal.to_ical())
     print("文件保存成功")
