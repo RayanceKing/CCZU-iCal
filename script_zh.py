@@ -340,20 +340,16 @@ if __name__ == "__main__":
     }
 
     userInfo = input("请输入学号和密码，以空格隔开：").split()
-    """
     try:
         print("开始获取Cookies...")
         gCookie = loginCookie(userInfo[0], userInfo[1])  # Type: Dict
     except Exception:
         print("遇到错误啦w(ﾟДﾟ)w，请重试")
         sys.exit(0)
-    """
     # gCookie = {'ASP.NET_SessionId': 'rc11ki45x4545w3njnbpfbqw'}
 
     print("开始获取课表...")
-    file = open("data.html", encoding="utf-8")
-    textDom = file.read()
-    file.close()
+    textDom = getDom(gCookie)
     if not textDom:
         print("遇到错误啦(´･ω･`)?,请重试")
         sys.exit(0)
