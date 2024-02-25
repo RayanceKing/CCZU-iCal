@@ -116,7 +116,7 @@ def classHandler(text):
                     nl = list(
                         filter(lambda x: course.startswith(x), classNameList))
                     assert len(
-                        nl) == 1, "Unable to resolve course name correctly"
+                        nl) == 1, "无法正确解析课程名称"
                     classname = nl[0]
                     course = course.replace(classname, '').strip()
                     # 正则表达式匹配课程信息
