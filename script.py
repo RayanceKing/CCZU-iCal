@@ -191,16 +191,19 @@ class ICal(object):
             startDate, endDate = firstDate + datetime.timedelta(days=(float(
                 (startWeek - 1) * 7) + weekday - 1)), firstDate + datetime.timedelta(days=(float((endWeek - 1) * 7) + weekday - 1))
 
-            status = True
-            date = startDate
-            w = startWeek
-            while(status):
-                if(oe == 3 or (oe == 1) and (w % 2 == 1) or (oe == 2) and(w % 2 == 0)):
-                    info['daylist'].append(date.strftime("%Y%m%d"))
-                date = date + datetime.timedelta(days=7.0)
-                w = w + 1
-                if(date > endDate):
-                    status = False
+            while True:
+                if (
+                    oe == 3 
+                    or (oe == 1) 
+                    and (startWeek % 2 == 1) 
+                    or (oe == 2) 
+                    and (startWeek % 2 == 0)
+                    ):
+                    info['daylist'].append(startDate.strftime("%Y%m%d"))
+                startDate = startDate + datetime.timedelta(days=7.0)
+                startWeek = startWeek + 1
+                if (startDate > endDate):
+                    break
         return info
 
     def to_ical(self):
@@ -250,7 +253,8 @@ class ICal(object):
                 cal.add_component(event)
 
         # weekly info
-        fweek = datetime.date.fromtimestamp(int(time.mktime(self.firstWeekDate))) - datetime.timedelta(days=1.0)
+        fweek = datetime.date.fromtimestamp(
+            int(time.mktime(self.firstWeekDate))) - datetime.timedelta(days=1.0)
         createTime = datetime.datetime.now()
         for _ in range(18):
             sub_prop = {
