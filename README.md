@@ -16,7 +16,7 @@
 
 ```
 # 下载代码
-git clone https://github.com/Hogan-TR/CCZU-iCal.git
+git clone git@github.com:Student-WangYL/CCZU-iCal.git
 cd CCZU-iCal
 
 # 创建虚拟环境
@@ -28,7 +28,7 @@ source ./.venv/bin/activate  # Linux & macOS
 pip install -r requirements.txt
 
 # 运行
-python script_zh.py
+python GUI.py
 
 # 然后根据提示一次键入
 * 教务系统学号 + 密码
@@ -51,5 +51,6 @@ python script_zh.py
 - [x]  课前提醒功能
 - [x]  课程的单双周差异，及特殊情况
 - [x]  提供周次信息
-- [ ]  打包成软件，实现可视化日历**订阅**，降低使用门槛
+- [x]  实现可视化日历**订阅**，降低使用门槛
+- [ ]  打包成软件
 
