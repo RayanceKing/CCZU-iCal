@@ -1,21 +1,100 @@
-import json
+import tkinter as tk
+from tkinter import messagebox
 import sys
-from datetime import datetime, timedelta
+import requests
+from lxml import etree
+import json
+import datetime
 import time
 import re
 import uuid
 from icalendar import Calendar, Event, Alarm
-from lxml import etree
 from typing import Optional
 
+# 功能代码
+# 把 loginCookie, getDom, classHandler, setReminder, ICal 等函数定义放在这里
+# ...
 
-def getDomOffline(filePath: str) -> Optional[str]:
+
+def loginCookie(
+    user: str, passwd: str
+) -> dict:  # 定义函数，传入学号和密码，返回Cookies
+    session = requests.session()
+    url = "http://jwcas.cczu.edu.cn/login"
+
+    # 获取随机信息
     try:
-        with open(filePath, 'r', encoding='utf-8') as file:
-            content = file.read()
-        return content
-    except Exception as e:
-        print(f"读取本地文件失败: {e}")
+        html = session.get(url, headers=headers)
+        html.raise_for_status()
+        html.encoding = html.apparent_encoding
+        html = html.text
+    except Exception:  # 如果获取失败，退出程序
+        print("从登录页获取随机信息失败")
+        sys.exit(0)
+
+    # 初始化字符串，使其可用于xpath的函数
+    html = etree.HTML(html)
+    # 获取随机数据的名称和值
+    # Type of gName, gValue: list
+    gName = html.xpath('//input[@type="hidden"]/@name')  # 获取随机信息的name
+    gValue = html.xpath('//input[@type="hidden"]/@value')  # 获取随机信息的value
+    gAll = {}  # 创建字典，用于存储随机信息
+    for i in range(3):  # 将随机信息存入字典
+        gAll[gName[i]] = gValue[i]  # 将随机信息的name和value存入字典
+
+    # 发送数据
+    data = {
+        "username": user,
+        "password": passwd,
+        "warn": "true",
+        "lt": gAll["lt"],
+        "execution": gAll["execution"],
+        "_eventId": gAll["_eventId"],
+    }
+
+    # 官方登录
+    sc = session.post(url, headers=headers, data=data)
+    if not sc.cookies.get_dict():
+        print("用户名或密码错误，请检查重试")
+        sys.exit(0)
+
+    # 拦截跳转链接
+    try:
+        tmp = session.get(
+            "http://jwcas.cczu.edu.cn/login?service=http://219.230.159.132/login7_jwgl.aspx",
+            headers=headers,
+        )
+        tmp_html = etree.HTML(tmp.text)
+        Rurl = tmp_html.xpath("//a[@href and text()]/@href")[0]
+    except Exception:
+        print("获取跳转链接失败")
+        sys.exit(0)
+
+    # 从DirectPage获取我们需要的Cookie
+    try:
+        tmp2 = session.get(Rurl, headers=headers)
+    except Exception:
+        print("获取实用Cookies失败")
+        sys.exit(0)
+
+    # 提取cookie字典并返回它。
+    print("获取Cookies成功")
+    return tmp2.cookies.get_dict()
+
+
+# 定义函数，传入学号和密码，返回Cookies
+
+# 定义函数，传入Cookies，返回课表
+
+
+def getDom(cookies: dict) -> Optional[str]:
+    url = "http://219.230.159.132/web_jxrw/cx_kb_xsgrkb.aspx"
+
+    try:
+        rep = requests.get(url, headers=headers, cookies=cookies)
+        rep.raise_for_status()
+        return rep.text
+    except requests.exceptions.HTTPError:  # If get the status code - 500
         return None
 
 
@@ -50,7 +129,8 @@ def classHandler(text):
                 if course != "\xa0" and (
                     not course_time or id not in courseInfo.keys()
                 ):
-                    nl = list(filter(lambda x: course.startswith(x), classNameList))
+                    nl = list(
+                        filter(lambda x: course.startswith(x), classNameList))
                     # 待修复“C/C++无法正确解析”
                     assert len(nl) == 1, "无法正确解析课程名称"
                     classname = nl[0]
@@ -98,7 +178,7 @@ def setReminder(reminder):
     # 将分钟转换为ics文件中的时间格式
     time_tuple = re.match(
         r"(([\d ]+) days, )*(\d+):(\d+):(\d+)",
-        str(timedelta(minutes=int(reminder))),
+        str(datetime.timedelta(minutes=int(reminder))),
     ).groups()[1:]
     # 将时间格式转换为ics文件中的时间格式
     time_map = map(lambda x: x if x else "0", time_tuple)
@@ -146,7 +226,7 @@ class ICal(object):
     def handler(self, info):
         weekday = info["day"]
         oe = info["oe"]
-        firstDate = datetime.fromtimestamp(
+        firstDate = datetime.datetime.fromtimestamp(
             int(time.mktime(self.firstWeekDate))
         )
         info["daylist"] = list()
@@ -155,9 +235,9 @@ class ICal(object):
             startWeek, endWeek = map(int, weeks.split("-"))
             startDate, endDate = (
                 firstDate
-                + timedelta(days=(float((startWeek - 1) * 7) + weekday - 1)),
+                + datetime.timedelta(days=(float((startWeek - 1) * 7) + weekday - 1)),
                 firstDate
-                + timedelta(days=(float((endWeek - 1) * 7) + weekday - 1)),
+                + datetime.timedelta(days=(float((endWeek - 1) * 7) + weekday - 1)),
             )
 
             # 如果课程为单周或双周，将其添加到课程信息中
@@ -169,10 +249,9 @@ class ICal(object):
                     or (oe == 2)
                     and (startWeek % 2 == 0)
                 ):
-                    info["daylist"].append(startDate.date().strftime("%Y%m%d"))
+                    info["daylist"].append(startDate.strftime("%Y%m%d"))
                 startDate = startDate + datetime.timedelta(days=7.0)
                 startWeek = startWeek + 1
-                print(info["daylist"])
                 if startDate > endDate:
                     break
         return info
@@ -259,6 +338,56 @@ class ICal(object):
                 cal.to_ical(), encoding="utf-8").replace("\r\n", "\n").strip()
         )
 
+def login():
+    student_number = entry_student_number.get()
+    password = entry_password.get()
+    reminder_time = entry_reminder.get()
+    first_week_date = entry_first_week_date.get()
+
+    # 输入验证
+    if not student_number or not password:
+        messagebox.showerror("错误", "请输入学号和密码。")
+        return
+    if not reminder_time.isdigit():
+        messagebox.showerror("错误", "提醒时间请输入数字。")
+        return
+    if len(first_week_date) != 8 or not first_week_date.isdigit():
+        messagebox.showerror("错误", "请输入正确格式的日期（如：20230904）。")
+        return
+
+    # 这里调用功能代码中的函数
+    try:
+        print("开始获取Cookies...")
+        cookies = loginCookie(student_number, password)  # 使用用户输入的学号和密码
+
+        print("开始获取课表...")
+        dom = getDom(cookies)
+        if not dom:
+            messagebox.showerror("错误", "获取课表失败，请重试。")
+            return
+        else:
+            print("获取课表成功")
+
+        print("开始课表格式化...")
+        classHandler(dom)
+
+        print("正在配置上课时间...")
+        setClassTime()
+
+        print("正在配置第一周周一日期...")
+        print("SetFirstWeekDate:", first_week_date)
+
+        print("正在配置课前提醒...")
+        setReminder(reminder_time)
+
+        print("正在生成ics文件...")
+        iCal = ICal.withStrDate(first_week_date, classTimeList, courseInfoRes)
+        with open("./class.ics", "w", encoding="utf-8") as f:
+            f.write(iCal.to_ical())
+        print("文件保存成功")
+        messagebox.showinfo("成功", "课程表已成功生成！")
+    except Exception as e:
+        messagebox.showerror("错误", f"发生错误：{e}")
 
 # 主函数
 if __name__ == "__main__":
@@ -270,34 +399,47 @@ if __name__ == "__main__":
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"
     }
+    # GUI 代码
+# 登录按钮的回调函数
+# 创建主窗口
 
-    # 使用本地HTML文件进行离线测试
-    filePath = "/Users/wangyuliang/文件-本地/200-Code/教务管理信息系统.html"# 保存课表页面的本地文件路径
-    textDom = getDomOffline(filePath)
-    if not textDom:
-        print("遇到错误，请检查本地文件路径是否正确")
-        sys.exit(0)
-    else:
-        print("从本地文件获取课表成功")
+root = tk.Tk()
+root.title("课程表助手")
 
-    print("开始课表格式化...")
-    classHandler(textDom)
+# 创建一个登录字段的框架
+frame_login = tk.Frame(root)
+frame_login.pack(padx=10, pady=10)
 
-    print("正在配置上课时间...")
-    setClassTime()
+# 学号输入
+label_student_number = tk.Label(frame_login, text="学号：")
+label_student_number.grid(row=0, column=0, sticky="e")
+entry_student_number = tk.Entry(frame_login)
+entry_student_number.grid(row=0, column=1)
 
-    firstWeekDate = input(
-        "请输入此学期第一周的星期一日期(eg 20230904)："
-    )  # 周一第一周的开始数据
-    print("正在配置第一周周一日期...")
-    print("SetFirstWeekDate:", firstWeekDate)
+# 密码输入
+label_password = tk.Label(frame_login, text="密码：")
+label_password.grid(row=1, column=0, sticky="e")
+entry_password = tk.Entry(frame_login, show="*")
+entry_password.grid(row=1, column=1)
 
-    reminder = input("正在配置提醒功能,请以分钟为单位设定课前提醒时间(默认值为15):")
-    print("正在配置课前提醒...")
-    setReminder(reminder)
+# 课前提醒时间输入
+label_reminder = tk.Label(frame_login, text="提醒时间（分钟）：")
+label_reminder.grid(row=2, column=0, sticky="e")
+entry_reminder = tk.Entry(frame_login)
+entry_reminder.grid(row=2, column=1)
 
-    print("正在生成ics文件...")
-    iCal = ICal.withStrDate(firstWeekDate, classTimeList, courseInfoRes)
-    with open("./class.ics", "w", encoding="utf-8") as f:
-        f.write(iCal.to_ical())
-    print("文件保存成功")
+# 第一周星期一日期输入
+label_first_week_date = tk.Label(frame_login, text="第一周星期一（如20230904）：")
+label_first_week_date.grid(row=3, column=0, sticky="e")
+entry_first_week_date = tk.Entry(frame_login)
+entry_first_week_date.grid(row=3, column=1)
+
+
+
+# GUI 组件创建代码
+# 登录按钮
+button_login = tk.Button(frame_login, text="提交", command=login)
+button_login.grid(row=4, column=0, columnspan=2, pady=5)
+
+# 主循环
+root.mainloop()
