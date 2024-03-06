@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 import time
 import re
 import uuid
-import requests
 from icalendar import Calendar, Event, Alarm
 from lxml import etree
 from typing import Optional
@@ -51,8 +50,8 @@ def classHandler(text):
                 if course != "\xa0" and (
                     not course_time or id not in courseInfo.keys()
                 ):
-                    nl = list(
-                        filter(lambda x: course.startswith(x), classNameList))
+                    nl = list(filter(lambda x: course.startswith(x), classNameList))
+                    # 待修复“C/C++无法正确解析”
                     assert len(nl) == 1, "无法正确解析课程名称"
                     classname = nl[0]
                     course = course.replace(classname, "").strip()
@@ -171,7 +170,7 @@ class ICal(object):
                     and (startWeek % 2 == 0)
                 ):
                     info["daylist"].append(startDate.date().strftime("%Y%m%d"))
-                startDate = startDate + timedelta(days=7.0)
+                startDate = startDate + datetime.timedelta(days=7.0)
                 startWeek = startWeek + 1
                 print(info["daylist"])
                 if startDate > endDate:
@@ -199,7 +198,7 @@ class ICal(object):
             startTime = self.schedule[course["classtime"][0] - 1]["startTime"]
             endTime = self.schedule[course["classtime"][-1] - 1]["endTime"]
             classroom = list(filter(None, course["classroom"]))
-            createTime = datetime.now()
+            createTime = datetime.datetime.now()
             for day in course["daylist"]:
                 sub_prop = {
                     "CREATED": createTime,
@@ -207,10 +206,10 @@ class ICal(object):
                         course["classname"], "/".join(classroom)
                     ),
                     "UID": uuid.uuid4().hex + "@google.com",
-                    "DTSTART": datetime.strptime(
+                    "DTSTART": datetime.datetime.strptime(
                         day + startTime, "%Y%m%d%H%M"
                     ),
-                    "DTEND": datetime.strptime(day + endTime, "%Y%m%d%H%M"),
+                    "DTEND": datetime.datetime.strptime(day + endTime, "%Y%m%d%H%M"),
                     "DTSTAMP": createTime,
                     "LAST-MODIFIED": createTime,
                     "SEQUENCE": "0",
@@ -233,24 +232,23 @@ class ICal(object):
                 cal.add_component(event)
 
         # 每周信息
-        fweek = datetime.fromtimestamp(
-            int(time.mktime(self.firstWeekDate))
-        ) - timedelta(days=1)
-        createTime = datetime.now()
+        fweek = datetime.datetime.fromtimestamp(
+            int(time.mktime(self.firstWeekDate))) - datetime.timedelta(days=1.0)
+        createTime = datetime.datetime.now()
         for _ in range(18):
             sub_prop = {
                 "CREATED": createTime,
                 "SUMMARY": "学期第 {} 周".format(_ + 1),
                 "UID": uuid.uuid4().hex + "@google.com",
                 "DTSTART": fweek.date(),
-                "DTEND": (fweek + timedelta(days=7.0)).date(),
+                "DTEND": (fweek + datetime.timedelta(days=7.0)).date(),
                 "DTSTAMP": createTime,
                 "LAST-MODIFIED": createTime,
                 "SEQUENCE": "0",
                 "TRANSP": "OPAQUE",
                 "X-APPLE-TRAVEL-ADVISORY-BEHAVIOR": "AUTOMATIC",
             }
-            fweek += timedelta(days=7.0)
+            fweek += datetime.timedelta(days=7.0)
             event = Event()
             for key, value in sub_prop.items():
                 event.add(key, value)
