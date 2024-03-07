@@ -1,10 +1,7 @@
 name: 使用PyInstaller进行跨平台构建
 
-on:
-  push:
-    branches:
-      - master
-
+on: push
+  
 jobs:
   build:
     strategy:
@@ -14,20 +11,20 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - name: Checkout code
+    - name: 检查代码
       uses: actions/checkout@v2
 
-    - name: Set up Python
+    - name: 设置Python
       uses: actions/setup-python@v2
       with:
         python-version: 3.11.7  # 配置你所需的Python版本
 
-    - name: Install dependencies
+    - name: 安装依赖项
       run: |
         python -m pip install --upgrade pip
         pip install pyinstaller
 
-    - name: Build Executable
+    - name: 构建可执行文件
       run: |
         if [ "$RUNNER_OS" == "Windows" ]; then
           pyinstaller --onefile --windowed -i icon.ico GUI.py
