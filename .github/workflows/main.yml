@@ -1,33 +1,35 @@
-name: 自动化GUI构建
+name: 多平台Python软件包
 
 on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.11.7'  # 指定Python版本
+    - name: Set up ${{ matrix.os }}
+      uses: actions/setup-${{ matrix.os }}@v2
 
-    - name: Install PyInstaller
+    - name: Install pyinstaller
       run: pip install pyinstaller
 
-    - name: Build for Linux
+    # 下面是使用pyinstaller打包的步骤，针对每个平台可能需要不同的配置
+    - name: Packaging for ${{ matrix.os }}
       run: |
-        pyinstaller -w -D -i icon.ico GUI.py
-        mv dist/cczuical .
-
-    - name: Build for Windows
-      run: |
-        pyinstaller -w -D -i icon.ico GUI.py
-        mv dist/cczuical.exe .
-
-    - name: Build for macOS
-      run: |
-        pyinstaller -w -D -i icon.icns GUI.py
-        mv dist/cczuical.app .
-
+        # 针对特定平台的PyInstaller参数
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            pyinstaller --onefile --windowed --icon="icon.ico" GUI.py
+        elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            pyinstaller --onefile --windowed --icon="icon.icns" GUI.py
+        elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            pyinstaller --onefile GUI.py
+        fi
+        # 这里的yourscript.py是您要打包的Python脚本
+        # --onefile 表示生成单个可执行文件
+        # --windowed 表示打包的程序为窗口程序
+        # --icon="icon.ico/icns" 表示设置程序的图标，需要根据平台的不同替换格式
