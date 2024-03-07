@@ -1,6 +1,6 @@
 import json
 import sys
-from datetime import datetime, timedelta
+import datetime
 import time
 import re
 import uuid
@@ -41,36 +41,42 @@ def classHandler(text):
     # day: 一周中的某一天 / courses: 一天内的所有课程
 
     for day, courses in enumerate(classmatrixT):
-        # time: 课程的排名 / course_cb: 表单元格中的一个项目
         for course_time, course_cb in enumerate(courses):
             course_list = list(filter(None, course_cb.split("/")))
-            for course in course_list:
-                id = uuid.uuid3(uuid.NAMESPACE_DNS, course + str(day)).hex
-                # 如果课程不为空且不在课程信息中，将其添加到课程信息中
-                if course != "\xa0" and (
-                    not course_time or id not in courseInfo.keys()
-                ):
-                    nl = list(filter(lambda x: course.startswith(x), classNameList))
-                    # 待修复“C/C++无法正确解析”
-                    assert len(nl) == 1, "无法正确解析课程名称"
-                    classname = nl[0]
-                    course = course.replace(classname, "").strip()
-                    # 正则表达式匹配课程信息
-                    res = re.match(r"(\S+)? *([单双]?) *((\d+-\d+,?)+)", course)
-                    assert res, "课程信息解析异常"
-                    # 将课程信息添加到课程信息中
-                    info = {
-                        "classname": classname,
-                        "classtime": [course_time + 1],
-                        "day": day + 1,
-                        "week": list(filter(None, res.group(3).split(","))),
-                        "oe": oeDict.get(res.group(2), 3),
-                        "classroom": [res.group(1)],
-                    }
-                    courseInfo[id] = info
-                # 如果课程不为空且在课程信息中，将其添加到课程信息中
-                elif course != "\xa0" and id in courseInfo.keys():
-                    courseInfo[id]["classtime"].append(course_time + 1)
+            targetlen = len(course_list)
+            index = 0
+            while index < targetlen:
+                course = course_list[index]
+                if course != "\xa0":  # 检查课程是否为空
+                    id = uuid.uuid3(uuid.NAMESPACE_DNS, course + str(day)).hex
+                    if not course_time or id not in courseInfo.keys():
+                        nl = list(filter(lambda x: course.startswith(x), classNameList))
+                        if not nl:  # 如果没有匹配的课程名称
+                            if index < targetlen - 1:  # 如果不是最后一个元素
+                                # 将当前课程和下一个课程合并，并替换下一个课程
+                                course_list[index + 1] = f"{course}/{course_list[index + 1]}"
+                                index += 1  # 跳过下一个元素
+                                continue
+                            else:
+                                raise ValueError("无法正确解析课程名称")
+                        # 如果找到匹配的课程名称
+                        assert len(nl) == 1, "多个课程名称匹配，无法正确解析"
+                        classname = nl[0]
+                        course = course.replace(classname, "").strip()
+                        res = re.match(r"(\S+)? *([单双]?) *((\d+-\d+,?)+)", course)
+                        assert res, "Course information parsing exception"
+                        info = {
+                            "classname": classname,
+                            "classtime": [course_time + 1],
+                            "day": day + 1,
+                            "week": list(filter(None, res.group(3).split(","))),
+                            "oe": oeDict.get(res.group(2), 3),
+                            "classroom": [res.group(1)],
+                        }
+                        courseInfo[id] = info
+                    elif id in courseInfo.keys():
+                        courseInfo[id]["classtime"].append(course_time + 1)
+                index += 1
 
     # 合并同一课程的不同上课时间
     for course in courseInfo.values():
@@ -85,6 +91,7 @@ def classHandler(text):
             courseList[str(purecourse)] = course
     # 将课程列表转换为课程信息列表
     courseInfoRes = [course for course in courseList.values()]
+    print(courseInfoRes)
     print("课表格式化成功")
 
 
@@ -98,7 +105,7 @@ def setReminder(reminder):
     # 将分钟转换为ics文件中的时间格式
     time_tuple = re.match(
         r"(([\d ]+) days, )*(\d+):(\d+):(\d+)",
-        str(timedelta(minutes=int(reminder))),
+        str(datetime.timedelta(minutes=int(reminder))),
     ).groups()[1:]
     # 将时间格式转换为ics文件中的时间格式
     time_map = map(lambda x: x if x else "0", time_tuple)
@@ -112,7 +119,7 @@ def setReminder(reminder):
 def setClassTime():
     # 从配置文件中读取上课时间
     data = []
-    with open("conf_classTime.json", "r") as f:
+    with open("/Users/wangyuliang/文件-本地/200-Code/CCZU-iCal/conf_classTime.json", "r") as f:
         data = json.load(f)
     global classTimeList
     classTimeList = data["classTime"]
@@ -123,7 +130,6 @@ def save(string):
     f = open("class.ics", "wb")
     f.write(string.encode("utf-8"))
     f.close()
-
 
 # 定义类，传入课表，返回ics文件
 
@@ -146,7 +152,7 @@ class ICal(object):
     def handler(self, info):
         weekday = info["day"]
         oe = info["oe"]
-        firstDate = datetime.fromtimestamp(
+        firstDate = datetime.datetime.fromtimestamp(
             int(time.mktime(self.firstWeekDate))
         )
         info["daylist"] = list()
@@ -155,9 +161,9 @@ class ICal(object):
             startWeek, endWeek = map(int, weeks.split("-"))
             startDate, endDate = (
                 firstDate
-                + timedelta(days=(float((startWeek - 1) * 7) + weekday - 1)),
+                + datetime.timedelta(days=(float((startWeek - 1) * 7) + weekday - 1)),
                 firstDate
-                + timedelta(days=(float((endWeek - 1) * 7) + weekday - 1)),
+                + datetime.timedelta(days=(float((endWeek - 1) * 7) + weekday - 1)),
             )
 
             # 如果课程为单周或双周，将其添加到课程信息中
@@ -169,10 +175,9 @@ class ICal(object):
                     or (oe == 2)
                     and (startWeek % 2 == 0)
                 ):
-                    info["daylist"].append(startDate.date().strftime("%Y%m%d"))
+                    info["daylist"].append(startDate.strftime("%Y%m%d"))
                 startDate = startDate + datetime.timedelta(days=7.0)
                 startWeek = startWeek + 1
-                print(info["daylist"])
                 if startDate > endDate:
                     break
         return info
@@ -262,17 +267,13 @@ class ICal(object):
 
 # 主函数
 if __name__ == "__main__":
-    firstWeekDate = None
+    firstWeekDate = "20240226"
     classTimeList = None
     courseInfoRes = None
-    timeReminder = None
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"
-    }
+    timeReminder = "15"
 
     # 使用本地HTML文件进行离线测试
-    filePath = "/Users/wangyuliang/文件-本地/200-Code/教务管理信息系统.html"# 保存课表页面的本地文件路径
+    filePath = "/Users/wangyuliang/文件-本地/200-Code/教务管理信息系统 2.html"  # 保存课表页面的本地文件路径
     textDom = getDomOffline(filePath)
     if not textDom:
         print("遇到错误，请检查本地文件路径是否正确")
@@ -282,22 +283,19 @@ if __name__ == "__main__":
 
     print("开始课表格式化...")
     classHandler(textDom)
-
     print("正在配置上课时间...")
     setClassTime()
 
-    firstWeekDate = input(
-        "请输入此学期第一周的星期一日期(eg 20230904)："
-    )  # 周一第一周的开始数据
-    print("正在配置第一周周一日期...")
-    print("SetFirstWeekDate:", firstWeekDate)
+    '''firstWeekDate =  input(    "请输入此学期第一周的星期一日期(eg 20230904):")  # 周一第一周的开始数据
+    print("正在配置第一周周一日期...")'''
+    # print("SetFirstWeekDate:", firstWeekDate)
 
-    reminder = input("正在配置提醒功能,请以分钟为单位设定课前提醒时间(默认值为15):")
+    '''reminder = input("正在配置提醒功能,请以分钟为单位设定课前提醒时间(默认值为15):")
     print("正在配置课前提醒...")
-    setReminder(reminder)
+    setReminder(reminder)'''
 
     print("正在生成ics文件...")
     iCal = ICal.withStrDate(firstWeekDate, classTimeList, courseInfoRes)
-    with open("./class.ics", "w", encoding="utf-8") as f:
+    with open("/Users/wangyuliang/文件-本地/200-Code/class.ics", "w", encoding="utf-8") as f:
         f.write(iCal.to_ical())
     print("文件保存成功")
