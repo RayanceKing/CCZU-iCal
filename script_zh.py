@@ -111,38 +111,46 @@ def classHandler(text):
     global courseInfoRes
 
     # day: 一周中的某一天 / courses: 一天内的所有课程
-
     for day, courses in enumerate(classmatrixT):
-        # time: 课程的排名 / course_cb: 表单元格中的一个项目
         for course_time, course_cb in enumerate(courses):
             course_list = list(filter(None, course_cb.split("/")))
-            for course in course_list:
-                id = uuid.uuid3(uuid.NAMESPACE_DNS, course + str(day)).hex
-                # 如果课程不为空且不在课程信息中，将其添加到课程信息中
-                if course != "\xa0" and (
-                    not course_time or id not in courseInfo.keys()
-                ):
-                    nl = list(filter(lambda x: course.startswith(x), classNameList))
-                    # 待修复“C/C++无法正确解析”
-                    assert len(nl) == 1, "无法正确解析课程名称"
-                    classname = nl[0]
-                    course = course.replace(classname, "").strip()
-                    # 正则表达式匹配课程信息
-                    res = re.match(r"(\S+)? *([单双]?) *((\d+-\d+,?)+)", course)
-                    assert res, "课程信息解析异常"
-                    # 将课程信息添加到课程信息中
-                    info = {
-                        "classname": classname,
-                        "classtime": [course_time + 1],
-                        "day": day + 1,
-                        "week": list(filter(None, res.group(3).split(","))),
-                        "oe": oeDict.get(res.group(2), 3),
-                        "classroom": [res.group(1)],
-                    }
-                    courseInfo[id] = info
-                # 如果课程不为空且在课程信息中，将其添加到课程信息中
-                elif course != "\xa0" and id in courseInfo.keys():
-                    courseInfo[id]["classtime"].append(course_time + 1)
+            targetlen = len(course_list)
+            index = 0
+            while index < targetlen:
+                course = course_list[index]
+                if course != "\xa0":  # 检查课程是否为空
+                    id = uuid.uuid3(uuid.NAMESPACE_DNS, course + str(day)).hex
+                    if not course_time or id not in courseInfo.keys():
+                        nl = list(
+                            filter(lambda x: course.startswith(x), classNameList))
+                        if not nl:  # 如果没有匹配的课程名称
+                            if index < targetlen - 1:  # 如果不是最后一个元素
+                                # 将当前课程和下一个课程合并，并替换下一个课程
+                                course_list[index +
+                                            1] = f"{course}/{course_list[index + 1]}"
+                                index += 1  # 跳过下一个元素
+                                continue
+                            else:
+                                raise ValueError("无法正确解析课程名称")
+                        # 如果找到匹配的课程名称
+                        assert len(nl) == 1, "多个课程名称匹配，无法正确解析"
+                        classname = nl[0]
+                        course = course.replace(classname, "").strip()
+                        res = re.match(
+                            r"(\S+)? *([单双]?) *((\d+-\d+,?)+)", course)
+                        assert res, "Course information parsing exception"
+                        info = {
+                            "classname": classname,
+                            "classtime": [course_time + 1],
+                            "day": day + 1,
+                            "week": list(filter(None, res.group(3).split(","))),
+                            "oe": oeDict.get(res.group(2), 3),
+                            "classroom": [res.group(1)],
+                        }
+                        courseInfo[id] = info
+                    elif id in courseInfo.keys():
+                        courseInfo[id]["classtime"].append(course_time + 1)
+                index += 1
 
     # 合并同一课程的不同上课时间
     for course in courseInfo.values():
