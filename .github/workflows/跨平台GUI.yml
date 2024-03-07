@@ -1,7 +1,10 @@
-name: 使用PyInstaller进行跨平台构建
+name: 使用PyInstaller进行跨平台构建并发布
 
-on: push
-  
+on:
+  push:
+    branches:
+      - main         # 更改为您的主分支名称
+
 jobs:
   build:
     strategy:
@@ -28,20 +31,57 @@ jobs:
       run: |
         if [ "$RUNNER_OS" == "Windows" ]; then
           pyinstaller --onefile --windowed -i icon.ico GUI.py
-          # 或者指定更复杂的配置文件和选项
         elif [ "$RUNNER_OS" == "Linux" ]; then
           pyinstaller --onefile --windowed -i icon.ico GUI.py
         elif [ "$RUNNER_OS" == "macOS" ]; then
           pyinstaller --onefile --windowed -i icon.icns GUI.py
         fi
 
-    - name: Upload all platform artifacts together
+    - name: Upload artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: app-all-platforms
-        path: |
-          dist/*.exe
-          dist/*.AppImage
-          dist/*.app
+        name: app-${{ matrix.os }}
+        path: dist/*.exe       # 对于Windows
+        path: dist/*.AppImage  # 对于Linux
+        path: dist/*.app       # 对于macOS
+        if: always()           # 确保即使在失败的情况下也能上传构建产物
 
-# 如果需要，还可以添加步骤将构建好的可执行文件发布到其他位置或者创建GitHub Release等
+  create_release:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: release
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up GitHub CLI
+      run: |
+        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+        sudo apt update && sudo apt install gh
+
+    - name: Create or get latest release tag
+      id: get_latest_tag
+      run: |
+        LATEST_TAG=$(gh release view --json tagName --jq .tagName)
+        echo ::set-output name=latest_tag::${LATEST_TAG}
+
+    - name: Download all platform artifacts
+      uses: actions/download-artifact@v2
+      with:
+        path: dist/
+
+    - name: Create new GitHub Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 这里使用GitHub Actions默认提供的token
+      run: |
+        gh release create "${{ steps.get_latest_tag.outputs.latest_tag }}" \
+          --title "Release ${{ steps.get_latest_tag.outputs.latest_tag }}" \
+          --notes "Automated cross-platform release for commit $(git rev-parse HEAD)" \
+          --target "${{ steps.get_latest_tag.outputs.latest_tag }}" \
+          --draft \
+          --prerelease \
+          dist/*
+
+    # 如果您不希望每次都是草稿或预发布版，请移除 `--draft` 和 `--prerelease` 参数
