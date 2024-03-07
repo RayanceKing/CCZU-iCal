@@ -1,35 +1,50 @@
-name: 多平台Python软件包
+name: 使用PyInstaller进行跨平台构建
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-    - name: Set up ${{ matrix.os }}
-      uses: actions/setup-${{ matrix.os }}@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.11.7  # 配置你所需的Python版本
 
-    - name: Install pyinstaller
-      run: pip install pyinstaller
-
-    # 下面是使用pyinstaller打包的步骤，针对每个平台可能需要不同的配置
-    - name: Packaging for ${{ matrix.os }}
+    - name: Install dependencies
       run: |
-        # 针对特定平台的PyInstaller参数
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            pyinstaller --onefile --windowed --icon="icon.ico" GUI.py
-        elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            pyinstaller --onefile --windowed --icon="icon.icns" GUI.py
-        elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            pyinstaller --onefile GUI.py
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+
+    - name: Build Executable
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          pyinstaller --onefile --windowed -i icon.ico GUI.py
+          # 或者指定更复杂的配置文件和选项
+        elif [ "$RUNNER_OS" == "Linux" ]; then
+          pyinstaller --onefile --windowed -i icon.ico GUI.py
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          pyinstaller --onefile --windowed -i icon.ico GUI.py
         fi
-        # 这里的yourscript.py是您要打包的Python脚本
-        # --onefile 表示生成单个可执行文件
-        # --windowed 表示打包的程序为窗口程序
-        # --icon="icon.ico/icns" 表示设置程序的图标，需要根据平台的不同替换格式
+
+    - name: Upload all platform artifacts together
+      uses: actions/upload-artifact@v2
+      with:
+        name: app-all-platforms
+        path: |
+          dist/*.exe
+          dist/*.AppImage
+          dist/*.app
+
+# 如果需要，还可以添加步骤将构建好的可执行文件发布到其他位置或者创建GitHub Release等
