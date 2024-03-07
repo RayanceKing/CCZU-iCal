@@ -32,7 +32,7 @@ jobs:
         elif [ "$RUNNER_OS" == "Linux" ]; then
           pyinstaller --onefile --windowed -i icon.ico GUI.py
         elif [ "$RUNNER_OS" == "macOS" ]; then
-          pyinstaller --onefile --windowed -i icon.ico GUI.py
+          pyinstaller --onefile --windowed -i icon.icns GUI.py
         fi
 
     - name: Upload all platform artifacts together
