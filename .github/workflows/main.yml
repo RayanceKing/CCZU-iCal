@@ -16,10 +16,10 @@ jobs:
     - name: Install PyInstaller
       run: pip install pyinstaller
 
-    - name: Build for Linux
-      run: |
-        pyinstaller -i icon.ico -w GUI.py
-        mv dist/cczuical .
+    #- name: Build for Linux
+     # run: |
+      #  pyinstaller -i icon.ico -w GUI.py
+       # mv dist/cczuical .
 
     - name: Build for Windows
       run: |
