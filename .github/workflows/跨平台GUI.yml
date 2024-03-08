@@ -70,6 +70,12 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    # 添加此步骤以设置Git用户信息
+    - name: Set Git config
+      run: |
+        git config user.name "GitHub Actions Bot"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
     # 添加自定义版本号生成逻辑
     - name: Checkout code (用于创建新标签)
       uses: actions/checkout@v2
