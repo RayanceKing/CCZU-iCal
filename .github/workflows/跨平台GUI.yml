@@ -32,7 +32,7 @@ jobs:
       run: |
         pip install pyinstaller
 
-    - name: 使用PyInstaller构建
+    - name: Build with PyInstaller
       run: |
         if [ "$RUNNER_OS" == "Windows" ]; then
           pyinstaller --onefile --windowed -i icon.ico GUI.py
@@ -41,6 +41,7 @@ jobs:
         elif [ "$RUNNER_OS" == "macOS" ]; then
           pyinstaller --onefile --windowed -i icon.icns GUI.py
         fi
+      shell: bash
 
     - name: 上传 Windows 工程
       uses: actions/upload-artifact@v2
@@ -68,7 +69,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: actions/download-artifact@v2
+
+    - name: 下载构建工程
+      uses: actions/download-artifact@v2
       with:
         path: dist
 
@@ -83,12 +86,36 @@ jobs:
         draft: false
         prerelease: false
 
-    - name: Upload Release Asset
+    - name: 上传 Windows 工程到Release
       uses: actions/upload-release-asset@v1
+      if: contains(github.ref, 'windows')
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/myapp-${{ matrix.os }}-${{ matrix.python-version }}.zip
-        asset_name: myapp-${{ matrix.os }}-${{ matrix.python-version }}.zip
+        asset_path: ./dist/cczuical-windows-latest.exe
+        asset_name: cczuical-windows-latest.exe
+        asset_content_type: application/octet-stream
+
+    - name: 上传 Linux 工程到Release
+      uses: actions/upload-release-asset@v1
+      if: contains(github.ref, 'ubuntu')
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/cczuical-ubuntu-latest.AppImage
+        asset_name: cczuical-ubuntu-latest.AppImage
+        asset_content_type: application/octet-stream
+
+    - name: 上传 macOS 工程到Release
+      uses: actions/upload-release-asset@v1
+      if: contains(github.ref, 'macos')
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/cczuical-macos-latest.app
+        asset_name: cczuical-macos-latest.app
+        asset_content_type: application/octet-stream
         asset_content_type: application/zip
