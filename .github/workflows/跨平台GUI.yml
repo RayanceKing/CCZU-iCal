@@ -118,4 +118,3 @@ jobs:
         asset_path: ./dist/cczuical-macos-latest.app
         asset_name: cczuical-macos-latest.app
         asset_content_type: application/octet-stream
-        asset_content_type: application/zip
