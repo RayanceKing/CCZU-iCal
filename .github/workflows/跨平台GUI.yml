@@ -14,55 +14,55 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: [3.11.7]
 
-steps:
-  - uses: actions/checkout@v2
-    with:
-      fetch-depth: 0
-  
-  - name: 安装Python
-    uses: actions/setup-python@v2
-    with:
-      python-version: ${{ matrix.python-version }}
-  
-  - name: 安装依赖
-    run: |
-      pip install -r requirements.txt
-  
-  - name: 安装PyInstaller
-    run: |
-      pip install pyinstaller
-  
-  - name: Build with PyInstaller
-    run: |
-      if [ "$RUNNER_OS" == "Windows" ]; then
-        pyinstaller --onefile --windowed -i icon.ico GUI.py
-      elif [ "$RUNNER_OS" == "Linux" ]; then
-        pyinstaller --onefile --windowed -i icon.ico GUI.py
-      elif [ "$RUNNER_OS" == "macOS" ]; then
-        pyinstaller --onefile --windowed -i icon.icns GUI.py
-      fi
-    shell: bash
-  
-  - name: 上传 Windows 工程
-    uses: actions/upload-artifact@v2
-    if: startsWith(matrix.os, 'windows')
-    with:
-      name: app-${{ matrix.os }}.exe
-      path: dist/*.exe
-  
-  - name: 上传 Linux 工程
-    uses: actions/upload-artifact@v2
-    if: startsWith(matrix.os, 'ubuntu') # GitHub Actions uses 'ubuntu-latest' for Linux
-    with:
-      name: app-${{ matrix.os }}.AppImage
-      path: dist/*.AppImage
-  
-  - name: 上传 macOS 工程
-    uses: actions/upload-artifact@v2
-    if: startsWith(matrix.os, 'macos')
-    with:
-      name: app-${{ matrix.os }}.app
-      path: dist/*.app    
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    
+    - name: 安装Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: 安装依赖
+      run: |
+        pip install -r requirements.txt
+    
+    - name: 安装PyInstaller
+      run: |
+        pip install pyinstaller
+    
+    - name: Build with PyInstaller
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          pyinstaller --onefile --windowed -i icon.ico GUI.py
+        elif [ "$RUNNER_OS" == "Linux" ]; then
+          pyinstaller --onefile --windowed -i icon.ico GUI.py
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          pyinstaller --onefile --windowed -i icon.icns GUI.py
+        fi
+      shell: bash
+    
+    - name: 上传 Windows 工程
+      uses: actions/upload-artifact@v2
+      if: startsWith(matrix.os, 'windows')
+      with:
+        name: app-${{ matrix.os }}.exe
+        path: dist/*.exe
+    
+    - name: 上传 Linux 工程
+      uses: actions/upload-artifact@v2
+      if: startsWith(matrix.os, 'ubuntu') # GitHub Actions uses 'ubuntu-latest' for Linux
+      with:
+        name: app-${{ matrix.os }}.AppImage
+        path: dist/*.AppImage
+    
+    - name: 上传 macOS 工程
+      uses: actions/upload-artifact@v2
+      if: startsWith(matrix.os, 'macos')
+      with:
+        name: app-${{ matrix.os }}.app
+        path: dist/*.app    
 
   release:
     needs: build
