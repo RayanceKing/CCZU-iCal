@@ -1,9 +1,6 @@
 name: 使用PyInstaller进行跨平台构建并发布
 
-on:
-  push:
-    branches:
-      - main         # 更改为您的主分支名称
+on: push
 
 jobs:
   build:
