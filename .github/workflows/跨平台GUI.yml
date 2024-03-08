@@ -70,19 +70,55 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: 下载构建工程
+    # 添加自定义版本号生成逻辑
+    - name: Checkout code (用于创建新标签)
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0 # 确保获取所有历史记录以找到最新的标签
+
+    - name: Get Latest Tag
+      id: get_latest_tag
+      run: |
+        LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+        echo "::set-output name=latest_tag::$LATEST_TAG"
+
+    - name: Parse and Increment Version
+      id: increment_version
+      run: |
+        MAJOR=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | cut -d'.' -f1 | sed 's/v//')
+        MINOR=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | cut -d'.' -f2)
+        PATCH=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | cut -d'.' -f3)
+
+        ((PATCH++))
+
+        if [ $PATCH -ge 10 ]; then
+          ((MINOR++))
+          PATCH=1
+        fi
+
+        NEW_VERSION=v$MAJOR.$MINOR.$PATCH
+        echo "NEW_VERSION=$NEW_VERSION"
+        echo "::set-output name=new_version::$NEW_VERSION"
+
+    - name: Create New Tag
+      run: |
+        git tag -a ${{ steps.increment_version.outputs.new_version }} -m "Automatic release from main branch"
+        git push origin ${{ steps.increment_version.outputs.new_version }}
+
+    # 下载构建产物并上传至Release
+    - name: Download Build Artifacts
       uses: actions/download-artifact@v2
       with:
         path: dist
 
-    - name: Create Release
+    - name: Create GitHub Release
       id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        tag_name: ${{ steps.increment_version.outputs.new_version }}
+        release_name: Release ${{ steps.increment_version.outputs.new_version }}
         draft: false
         prerelease: false
 
