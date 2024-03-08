@@ -157,8 +157,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/app-macos-latest.app/ # 注意：macOS应用通常是一个目录，而非单个文件
-        asset_name: app-macos-latest.zip # 将整个.app目录压缩为zip文件再上传
+        asset_path: ./dist/app-macos.app/ # 注意：macOS应用通常是一个目录，而非单个文件
+        asset_name: app-macos.zip # 将整个.app目录压缩为zip文件再上传
         asset_content_type: application/zip
 
 # 在构建阶段，需要确保产出的文件名与上面upload步骤中的asset_path相对应
