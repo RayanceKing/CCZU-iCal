@@ -1,7 +1,3 @@
-env :
-  
-  GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-
 name: 构建和发布
 
 on:
@@ -16,57 +12,57 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: [3.11.7,3.11.7,3.11.7]
+        python-version: [3.11.7]
 
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-
-    - name: 安装Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: 安装依赖
-      run: |
-        pip install -r requirements.txt
-
-    - name: 安装PyInstaller
-      run: |
-        pip install pyinstaller
-
-    - name: Build with PyInstaller
-      run: |
-        if [ "$RUNNER_OS" == "Windows" ]; then
-          pyinstaller --onefile --windowed -i icon.ico GUI.py
-        elif [ "$RUNNER_OS" == "Linux" ]; then
-          pyinstaller --onefile --windowed -i icon.ico GUI.py
-        elif [ "$RUNNER_OS" == "macOS" ]; then
-          pyinstaller --onefile --windowed -i icon.icns GUI.py
-        fi
-      shell: bash
-
-    - name: 上传 Windows 工程
-      uses: actions/upload-artifact@v2
-      if: startsWith(matrix.os, 'windows')
-      with:
-        name: app-${{ matrix.os }}.exe
-        path: dist/*.exe
-
-    - name: 上传 Linux 工程
-      uses: actions/upload-artifact@v2
-      if: startsWith(matrix.os, 'ubuntu') # GitHub Actions uses 'ubuntu-latest' for Linux
-      with:
-        name: app-${{ matrix.os }}.AppImage
-        path: dist/*.AppImage
-
-    - name: 上传 macOS 工程
-      uses: actions/upload-artifact@v2
-      if: startsWith(matrix.os, 'macos')
-      with:
-        name: app-${{ matrix.os }}.app
-        path: dist/*.app
+steps:
+  - uses: actions/checkout@v2
+    with:
+      fetch-depth: 0
+  
+  - name: 安装Python
+    uses: actions/setup-python@v2
+    with:
+      python-version: ${{ matrix.python-version }}
+  
+  - name: 安装依赖
+    run: |
+      pip install -r requirements.txt
+  
+  - name: 安装PyInstaller
+    run: |
+      pip install pyinstaller
+  
+  - name: Build with PyInstaller
+    run: |
+      if [ "$RUNNER_OS" == "Windows" ]; then
+        pyinstaller --onefile --windowed -i icon.ico GUI.py
+      elif [ "$RUNNER_OS" == "Linux" ]; then
+        pyinstaller --onefile --windowed -i icon.ico GUI.py
+      elif [ "$RUNNER_OS" == "macOS" ]; then
+        pyinstaller --onefile --windowed -i icon.icns GUI.py
+      fi
+    shell: bash
+  
+  - name: 上传 Windows 工程
+    uses: actions/upload-artifact@v2
+    if: startsWith(matrix.os, 'windows')
+    with:
+      name: app-${{ matrix.os }}.exe
+      path: dist/*.exe
+  
+  - name: 上传 Linux 工程
+    uses: actions/upload-artifact@v2
+    if: startsWith(matrix.os, 'ubuntu') # GitHub Actions uses 'ubuntu-latest' for Linux
+    with:
+      name: app-${{ matrix.os }}.AppImage
+      path: dist/*.AppImage
+  
+  - name: 上传 macOS 工程
+    uses: actions/upload-artifact@v2
+    if: startsWith(matrix.os, 'macos')
+    with:
+      name: app-${{ matrix.os }}.app
+      path: dist/*.app    
 
   release:
     needs: build
@@ -83,7 +79,7 @@ jobs:
       id: create_release
       uses: actions/create-release@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       with:
         tag_name: ${{ github.ref }}
         release_name: Release ${{ github.ref }}
@@ -91,34 +87,36 @@ jobs:
         prerelease: false
 
     - name: 上传 Windows 工程到Release
+      if: matrix.os == 'windows-latest'
       uses: actions/upload-release-asset@v1
-      if: contains(github.ref, 'windows')
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/cczuical-windows-latest.exe
+        asset_path: ./dist/app-windows-latest.exe
         asset_name: cczuical-windows-latest.exe
         asset_content_type: application/octet-stream
 
     - name: 上传 Linux 工程到Release
+      if: matrix.os == 'ubuntu-latest'
       uses: actions/upload-release-asset@v1
-      if: contains(github.ref, 'ubuntu')
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/cczuical-ubuntu-latest.AppImage
+        asset_path: ./dist/app-ubuntu-latest.AppImage
         asset_name: cczuical-ubuntu-latest.AppImage
         asset_content_type: application/octet-stream
 
     - name: 上传 macOS 工程到Release
+      if: matrix.os == 'macos-latest'
       uses: actions/upload-release-asset@v1
-      if: contains(github.ref, 'macos')
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/cczuical-macos-latest.app
-        asset_name: cczuical-macos-latest.app
-        asset_content_type: application/octet-stream
+        asset_path: ./dist/app-macos-latest.app/ # 注意：macOS应用通常是一个目录，而非单个文件
+        asset_name: cczuical-macos-latest.zip # 将整个.app目录压缩为zip文件再上传
+        asset_content_type: application/zip
+
+# 在构建阶段，需要确保产出的文件名与上面upload步骤中的asset_path相对应
