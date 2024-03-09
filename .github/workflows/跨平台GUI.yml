@@ -16,149 +16,149 @@ jobs:
         python-version: [3.11.7]
 
     steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
     
-    - name: 安装Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    
-    - name: 安装依赖
-      run: |
-        pip install -r requirements.txt
-    
-    - name: 安装PyInstaller
-      run: |
-        pip install pyinstaller
-    
-    - name: 通过PyInstaller构建
-      run: |
-        if [ "$RUNNER_OS" == "Windows" ]; then
-          pyinstaller --onefile --windowed -i icon.ico GUI.py
-        elif [ "$RUNNER_OS" == "Linux" ]; then
-          pyinstaller --onefile --windowed -i icon.ico GUI.py
-        elif [ "$RUNNER_OS" == "macOS" ]; then
-          pyinstaller --onefile --windowed -i icon.icns GUI.py
-        fi
-      shell: bash
-    
-    - name: 上传 Windows 工程
-      uses: actions/upload-artifact@v2
-      if: startsWith(matrix.os, 'windows')
-      with:
-        name: app-${{ matrix.os }}.exe
-        path: dist/*.exe
-    
-    - name: 上传 Linux 工程
-      uses: actions/upload-artifact@v2
-      if: startsWith(matrix.os, 'ubuntu')
-      with:
-        name: app-${{ matrix.os }}.AppImage
-        path: dist/*.AppImage
-    
-    - name: 上传 macOS 工程
-      uses: actions/upload-artifact@v2
-      if: startsWith(matrix.os, 'macos')
-      with:
-        name: app-${{ matrix.os }}.app
-        path: dist/*.app
-    
-    - name: 压缩 macOS 应用程序
-      if: startsWith(matrix.os, 'macos-latest')
-      run: |
-        cd dist
-        zip -r app-macos.zip *.app # 使用通配符来匹配“.app”目录
-      shell: bash
+      - name: 安装Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: 安装依赖
+        run: |
+          pip install -r requirements.txt
+      
+      - name: 安装PyInstaller
+        run: |
+          pip install pyinstaller
+      
+      - name: 通过PyInstaller构建
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            pyinstaller --onefile --windowed -i icon.ico GUI.py
+          elif [ "$RUNNER_OS" == "Linux" ]; then
+            pyinstaller --onefile --windowed -i icon.ico GUI.py
+          elif [ "$RUNNER_OS" == "macOS" ]; then
+            pyinstaller --onefile --windowed -i icon.icns GUI.py
+          fi
+        shell: bash
+      
+      - name: 上传 Windows 工程
+        uses: actions/upload-artifact@v2
+        if: startsWith(matrix.os, 'windows')
+        with:
+          name: app-${{ matrix.os }}.exe
+          path: dist/*.exe
+      
+      - name: 上传 Linux 工程
+        uses: actions/upload-artifact@v2
+        if: startsWith(matrix.os, 'ubuntu')
+        with:
+          name: app-${{ matrix.os }}.AppImage
+          path: dist/*.AppImage
+      
+      - name: 上传 macOS 工程
+        uses: actions/upload-artifact@v2
+        if: startsWith(matrix.os, 'macos')
+        with:
+          name: app-${{ matrix.os }}.app
+          path: dist/*.app
+      
+      - name: 压缩 macOS 应用程序
+        if: startsWith(matrix.os, 'macos-latest')
+        run: |
+          cd dist
+          zip -r app-macos.zip *.app # 使用通配符来匹配“.app”目录
+        shell: bash
 
   release:
     needs: build
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Set Git config
-      run: |
-        git config user.name "GitHub Actions Bot"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Set Git config
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Checkout code (用于创建新标签)
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
+      - name: Checkout code (用于创建新标签)
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
-    - name: Get Latest Tag
-      id: get_latest_tag
-      run: |
-        LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
-        echo "::set-output name=latest_tag::$LATEST_TAG"
+      - name: Get Latest Tag
+        id: get_latest_tag
+        run: |
+          LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+          echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
 
-    - name: Parse and Increment Version
-      id: increment_version
-      run: |
-        MAJOR=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | cut -d'.' -f1 | sed 's/v//')
-        MINOR=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | cut -d'.' -f2)
-        PATCH=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | cut -d'.' -f3)
+      - name: Parse and Increment Version
+        id: increment_version
+        run: |
+          MAJOR=$(echo ${{ env.LATEST_TAG }} | cut -d'.' -f1 | sed 's/v//')
+          MINOR=$(echo ${{ env.LATEST_TAG }} | cut -d'.' -f2)
+          PATCH=$(echo ${{ env.LATEST_TAG }} | cut -d'.' -f3)
+      
+          ((PATCH++))
+      
+          if [ $PATCH -ge 10 ]; then
+            ((MINOR++))
+            PATCH=1
+          fi
+      
+          NEW_VERSION=v$MAJOR.$MINOR.$PATCH
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
 
-        ((PATCH++))
+      - name: Create New Tag
+        run: |
+          git tag -a ${{ env.NEW_VERSION }} -m "Automatic release from main branch"
+          git push origin ${{ env.NEW_VERSION }}
 
-        if [ $PATCH -ge 10 ]; then
-          ((MINOR++))
-          PATCH=1
-        fi
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.NEW_VERSION }}
+          release_name: Release ${{ env.NEW_VERSION }}
+          draft: false
+          prerelease: false
 
-        NEW_VERSION=v$MAJOR.$MINOR.$PATCH
-        echo "NEW_VERSION=$NEW_VERSION"
-        echo "::set-output name=new_version::$NEW_VERSION"
+      - name: 列出dist目录的内容
+        if: startsWith(matrix.os, 'windows')
+        run: |
+          echo "Listing contents of the dist directory:"
+          ls -la ./dist
 
-    - name: Create New Tag
-      run: |
-        git tag -a ${{ steps.increment_version.outputs.new_version }} -m "Automatic release from main branch"
-        git push origin ${{ steps.increment_version.outputs.new_version }}
+      - name: 上传 Windows 工程到Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/*.exe
+          asset_name: GUI-windows-latest.exe
+          asset_content_type: application/octet-stream
 
-    - name: Create GitHub Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.increment_version.outputs.new_version }}
-        release_name: Release ${{ steps.increment_version.outputs.new_version }}
-        draft: false
-        prerelease: false
-        
-    - name: 列出dist目录的内容
-      if: startsWith(runner.os, 'Windows')
-      run: |
-        echo "列出dist目录的内容:"
-        ls -la ./dist
-
-    - name: 上传 Windows 工程到Release
-      if: startsWith(matrix.os, 'windows')
-      run: |
-        for file in dist/*.exe; do
-          name=$(basename "$file")
-          echo "Uploading $name"
-          upload-release-asset --token ${{ secrets.PERSONAL_ACCESS_TOKEN }} --file "$file" --name "$name" --tag ${{ steps.create_release.outputs.tag_name }}
-        done
-
-    - name: 上传 Linux 工程到Release
-      if: startsWith(matrix.os, 'ubuntu')
-      run: |
-        for file in dist/*.AppImage; do
-          name=$(basename "$file")
-          echo "Uploading $name"
-          upload-release-asset --token ${{ secrets.PERSONAL_ACCESS_TOKEN }} --file "$file" --name "$name" --tag ${{ steps.create_release.outputs.tag_name }}
-        done
-    
-    - name: 上传 macOS 工程到Release
-      if: startsWith(matrix.os, 'macos')
-      run: |
-        for file in dist/*.zip; do
-          name=$(basename "$file")
-          echo "Uploading $name"
-          upload-release-asset --token ${{ secrets.PERSONAL_ACCESS_TOKEN }} --file "$file" --name "$name" --tag ${{ steps.create_release.outputs.tag_name }}
-        done
-
-
+      - name: 上传 Linux 工程到Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/*.AppImage
+          asset_name: GUI-ubuntu-latest.AppImage
+          asset_content_type: application/octet-stream
+      
+      - name: 上传 macOS 工程到Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/*.zip
+          asset_name: GUI-macos-latest.zip
+          asset_content_type: application/zip
