@@ -50,11 +50,13 @@ jobs:
         with:
           name: app-${{ matrix.os }}.exe
           path: dist/*.exe
+     
       - name: 列出dist目录的内容
         if: startsWith(matrix.os, 'windows')  # 仅在 Windows 操作系统下运行
         run: |
-          echo "列出dist目录的内容:"
-          ls -la dist
+          echo "Listing contents of the dist directory:"
+          dir dist
+
       
       - name: 上传 Linux 工程
         uses: actions/upload-artifact@v2
