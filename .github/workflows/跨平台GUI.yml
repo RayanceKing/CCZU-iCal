@@ -135,32 +135,30 @@ jobs:
         ls -la ./dist
 
     - name: 上传 Windows 工程到Release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/*.exe
-        asset_name: GUI-windows-latest.exe
-        asset_content_type: application/octet-stream
+      if: startsWith(matrix.os, 'windows')
+      run: |
+        for file in dist/*.exe; do
+          name=$(basename "$file")
+          echo "Uploading $name"
+          upload-release-asset --token ${{ secrets.PERSONAL_ACCESS_TOKEN }} --file "$file" --name "$name" --tag ${{ steps.create_release.outputs.tag_name }}
+        done
 
     - name: 上传 Linux 工程到Release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/*.AppImage
-        asset_name: GUI-ubuntu-latest.AppImage
-        asset_content_type: application/octet-stream
+      if: startsWith(matrix.os, 'ubuntu')
+      run: |
+        for file in dist/*.AppImage; do
+          name=$(basename "$file")
+          echo "Uploading $name"
+          upload-release-asset --token ${{ secrets.PERSONAL_ACCESS_TOKEN }} --file "$file" --name "$name" --tag ${{ steps.create_release.outputs.tag_name }}
+        done
     
     - name: 上传 macOS 工程到Release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/*.zip
-        asset_name: GUI-macos-latest.zip
-        asset_content_type: application/zip
+      if: startsWith(matrix.os, 'macos')
+      run: |
+        for file in dist/*.zip; do
+          name=$(basename "$file")
+          echo "Uploading $name"
+          upload-release-asset --token ${{ secrets.PERSONAL_ACCESS_TOKEN }} --file "$file" --name "$name" --tag ${{ steps.create_release.outputs.tag_name }}
+        done
+
 
