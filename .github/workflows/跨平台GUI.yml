@@ -32,7 +32,7 @@ jobs:
       run: |
         pip install pyinstaller
     
-    - name: Build with PyInstaller
+    - name: 通过PyInstaller构建
       run: |
         if [ "$RUNNER_OS" == "Windows" ]; then
           pyinstaller --onefile --windowed -i icon.ico GUI.py
@@ -64,7 +64,7 @@ jobs:
         name: app-${{ matrix.os }}.app
         path: dist/*.app    
  
-    - name: Download Build Artifacts for Release
+    - name: 下载构建工程以供发布
       uses: actions/download-artifact@v2
       with:
         name: app-${{ matrix.os }}.exe # 对于Windows
