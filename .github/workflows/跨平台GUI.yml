@@ -36,11 +36,11 @@ jobs:
       - name: 通过PyInstaller构建
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
-            pyinstaller --onefile --windowed -i icon.ico GUI.py
+            pyinstaller --windowed -i icon.ico GUI.py
           elif [ "$RUNNER_OS" == "Linux" ]; then
-            pyinstaller --onefile --windowed -i icon.ico GUI.py
+            pyinstaller --windowed -i icon.ico GUI.py
           elif [ "$RUNNER_OS" == "macOS" ]; then
-            pyinstaller --onefile --windowed -i icon.icns GUI.py
+            pyinstaller --windowed -i icon.icns GUI.py
           fi
         shell: bash
       
@@ -132,31 +132,37 @@ jobs:
 
 
       - name: 上传 Windows 工程到Release
+        if: startsWith(runner.os, 'windows')
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/*.exe
+          asset_path: dist/app-windows-latest.exe  # 使用实际的文件名
           asset_name: GUI-windows-latest.exe
           asset_content_type: application/octet-stream
 
+
       - name: 上传 Linux 工程到Release
+        if: startsWith(runner.os, 'ubuntu')
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/*.AppImage
+          asset_path: dist/app-ubuntu-latest.AppImage  # 使用实际的文件名
           asset_name: GUI-ubuntu-latest.AppImage
           asset_content_type: application/octet-stream
+
       
       - name: 上传 macOS 工程到Release
+        if: startsWith(runner.os, 'macos')
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/*.zip
+          asset_path: dist/cczuical-macos-latest.zip  # 使用实际的文件名
           asset_name: GUI-macos-latest.zip
           asset_content_type: application/zip
+        
