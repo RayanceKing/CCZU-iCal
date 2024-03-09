@@ -33,22 +33,20 @@ jobs:
         run: |
           pip install pyinstaller
       
-      - name: 通过PyInstaller构建
+      - name: 通过PyInstaller构建并输出文件信息
         run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
+          if [ "$RUNNER_OS" = "Windows" ]; then
             pyinstaller --windowed -D -i icon.ico GUI.py
-          elif [ "$RUNNER_OS" == "Linux" ]; then
-            pyinstaller --windowed -D -i icon.ico GUI.py
-          elif [ "$RUNNER_OS" == "macOS" ]; then
-            pyinstaller --windowed -D -i icon.icns GUI.py
-          # 输出生成的文件信息
-          echo "Generated files:"
-          if [ "$RUNNER_OS" == "Windows" ]; then
             dir dist
-          else
+          elif [ "$RUNNER_OS" = "Linux" ]; then
+            pyinstaller --windowed -D -i icon.ico GUI.py
+            ls -la dist
+          elif [ "$RUNNER_OS" = "macOS" ]; then
+            pyinstaller --windowed -D -i icon.icns GUI.py
             ls -la dist
           fi
         shell: bash
+
       
       - name: 上传 Windows 工程
         uses: actions/upload-artifact@v2
