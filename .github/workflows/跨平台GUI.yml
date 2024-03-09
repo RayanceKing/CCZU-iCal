@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: [3.11.7]
+        python-version: [3.11.8]
 
     steps:
       - uses: actions/checkout@v2
@@ -49,28 +49,21 @@ jobs:
         if: startsWith(matrix.os, 'windows')
         with:
           name: app-${{ matrix.os }}.exe
-          path: dist/*.exe
-     
-      - name: 列出dist目录的内容
-        if: startsWith(matrix.os, 'windows')  # 仅在 Windows 操作系统下运行
-        run: |
-          echo "Listing contents of the dist directory:"
-          dir dist
-
+          path: dist/GUI/*.exe
       
       - name: 上传 Linux 工程
         uses: actions/upload-artifact@v2
         if: startsWith(matrix.os, 'ubuntu')
         with:
           name: app-${{ matrix.os }}.AppImage
-          path: dist/*.AppImage
+          path: dist/GUI/*.AppImage
       
       - name: 上传 macOS 工程
         uses: actions/upload-artifact@v2
         if: startsWith(matrix.os, 'macos')
         with:
           name: app-${{ matrix.os }}.app
-          path: dist/*.app
+          path: dist/GUI/*.app
       
       - name: 压缩 macOS 应用程序
         if: startsWith(matrix.os, 'macos-latest')
@@ -141,7 +134,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/app-windows-latest.exe  # 使用实际的文件名
+          asset_path: dist/GUI/app-windows-latest.exe  # 使用实际的文件名
           asset_name: app-windows-latest.exe
           asset_content_type: application/octet-stream
 
@@ -153,7 +146,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/app-ubuntu-latest.AppImage  # 使用实际的文件名
+          asset_path: dist/GUI/app-ubuntu-latest.AppImage  # 使用实际的文件名
           asset_name: app-ubuntu-latest.AppImage
           asset_content_type: application/octet-stream
 
@@ -165,7 +158,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/app-macos.zip  # 使用实际的文件名
+          asset_path: dist/GUI/app-macos.zip  # 使用实际的文件名
           asset_name: app-macos-latest.zip
           asset_content_type: application/zip
         
