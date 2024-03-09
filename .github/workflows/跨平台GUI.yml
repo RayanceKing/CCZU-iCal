@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - debug-actions
 
 jobs:
   build:
@@ -33,7 +32,7 @@ jobs:
       run: |
         pip install pyinstaller
     
-    - name: Build with PyInstaller
+    - name: 通过PyInstaller构建
       run: |
         if [ "$RUNNER_OS" == "Windows" ]; then
           pyinstaller --onefile --windowed -i icon.ico GUI.py
@@ -53,7 +52,7 @@ jobs:
     
     - name: 上传 Linux 工程
       uses: actions/upload-artifact@v2
-      if: startsWith(matrix.os, 'ubuntu') # GitHub Actions uses 'ubuntu-latest' for Linux
+      if: startsWith(matrix.os, 'ubuntu')
       with:
         name: app-${{ matrix.os }}.AppImage
         path: dist/*.AppImage
@@ -62,8 +61,15 @@ jobs:
       uses: actions/upload-artifact@v2
       if: startsWith(matrix.os, 'macos')
       with:
-        name: app-${{ matrix.os }}.app
-        path: dist/*.app    
+        name: app-macos.app
+        path: dist/*.app
+    
+    - name: 压缩 macOS 应用程序
+      if: startsWith(matrix.os, 'macos-latest')
+      run: |
+        cd dist
+        zip -r app-macos.zip *.app # 使用通配符来匹配“.app”目录
+      shell: bash
 
   release:
     needs: build
@@ -71,19 +77,53 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: 下载构建工程
-      uses: actions/download-artifact@v2
-      with:
-        path: dist
+    - name: Set Git config
+      run: |
+        git config user.name "GitHub Actions Bot"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Create Release
+    - name: Checkout code (用于创建新标签)
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Get Latest Tag
+      id: get_latest_tag
+      run: |
+        LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+        echo "::set-output name=latest_tag::$LATEST_TAG"
+
+    - name: Parse and Increment Version
+      id: increment_version
+      run: |
+        MAJOR=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | cut -d'.' -f1 | sed 's/v//')
+        MINOR=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | cut -d'.' -f2)
+        PATCH=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | cut -d'.' -f3)
+
+        ((PATCH++))
+
+        if [ $PATCH -ge 10 ]; then
+          ((MINOR++))
+          PATCH=1
+        fi
+
+        NEW_VERSION=v$MAJOR.$MINOR.$PATCH
+        echo "NEW_VERSION=$NEW_VERSION"
+        echo "::set-output name=new_version::$NEW_VERSION"
+
+    - name: Create New Tag
+      run: |
+        git tag -a ${{ steps.increment_version.outputs.new_version }} -m "Automatic release from main branch"
+        git push origin ${{ steps.increment_version.outputs.new_version }}
+
+    - name: Create GitHub Release
       id: create_release
       uses: actions/create-release@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        tag_name: ${{ steps.increment_version.outputs.new_version }}
+        release_name: Release ${{ steps.increment_version.outputs.new_version }}
         draft: false
         prerelease: false
 
@@ -107,12 +147,6 @@ jobs:
         asset_name: cczuical-ubuntu-latest.AppImage
         asset_content_type: application/octet-stream
 
-    - name: 压缩 macOS 应用程序
-      run: |
-        cd dist
-        zip -r cczuical-macos-latest.zip app-macos-latest.app
-      shell: bash
-      
     - name: 上传 macOS 工程到Release
       uses: actions/upload-release-asset@v1
       env:
@@ -122,5 +156,3 @@ jobs:
         asset_path: ./dist/cczuical-macos-latest.zip
         asset_name: cczuical-macos-latest.zip
         asset_content_type: application/zip
-
-# 在构建阶段，需要确保产出的文件名与上面upload步骤中的asset_path相对应
