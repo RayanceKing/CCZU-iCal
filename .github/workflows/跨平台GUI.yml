@@ -41,6 +41,12 @@ jobs:
             pyinstaller --windowed -D -i icon.ico GUI.py
           elif [ "$RUNNER_OS" == "macOS" ]; then
             pyinstaller --windowed -D -i icon.icns GUI.py
+          # 输出生成的文件信息
+          echo "Generated files:"
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            dir dist
+          else
+            ls -la dist
           fi
         shell: bash
       
