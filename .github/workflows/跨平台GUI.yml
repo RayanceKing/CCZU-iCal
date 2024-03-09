@@ -134,7 +134,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/GUI.exe
+        asset_path: ./dist/*.exe
         asset_name: GUI-windows-latest.exe
         asset_content_type: application/octet-stream
 
@@ -144,7 +144,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/GUI.AppImage
+        asset_path: ./dist/*.AppImage
         asset_name: GUI-ubuntu-latest.AppImage
         asset_content_type: application/octet-stream
     
@@ -154,7 +154,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/GUI.zip
+        asset_path: ./dist/*.zip
         asset_name: GUI-macos-latest.zip
         asset_content_type: application/zip
 
