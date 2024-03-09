@@ -63,34 +63,34 @@ jobs:
       with:
         name: app-${{ matrix.os }}.app
         path: dist/*.app    
- 
-    - name: 下载构建工程以供发布
+
+    - name: 下载构建工程以供发布 (Windows)
+      if: startsWith(matrix.os, 'windows-latest')
       uses: actions/download-artifact@v2
       with:
-        name: app-${{ matrix.os }}.exe # 对于Windows
+        name: app-${{ matrix.os }}.exe
         path: dist/
-        if: startsWith(matrix.os, 'windows-latest')
     
-    - name: Download Build Artifacts for Release (Linux)
+    - name: 下载构建工程以供发布 (Linux)
+      if: startsWith(matrix.os, 'ubuntu-latest')
       uses: actions/download-artifact@v2
       with:
-        name: app-${{ matrix.os }}.AppImage # 对于Linux
+        name: app-${{ matrix.os }}.AppImage
         path: dist/
-        if: startsWith(matrix.os, 'ubuntu-latest')
     
-    - name: Download Build Artifacts for Release (macOS)
+    - name: 下载构建工程以供发布 (macOS)
+      if: startsWith(matrix.os, 'macos-latest')
       uses: actions/download-artifact@v2
       with:
-        name: app-${{ matrix.os }}.app # 对于macOS
-        path: dist/ # macOS应用应保持为.app目录
-        if: startsWith(matrix.os, 'macos-latest')
+        name: app-${{ matrix.os }}.app
+        path: dist/
     
-    # 确保在上传macOS应用时压缩.app目录
     - name: Zip macOS Application
       if: startsWith(matrix.os, 'macos-latest')
       run: |
         cd dist
         zip -r app-macos.zip app-macos.app
+      shell: bash
 
   release:
     needs: build
@@ -98,17 +98,15 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    # 添加此步骤以设置Git用户信息
     - name: Set Git config
       run: |
         git config user.name "GitHub Actions Bot"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-    # 添加自定义版本号生成逻辑
     - name: Checkout code (用于创建新标签)
       uses: actions/checkout@v2
       with:
-        fetch-depth: 0 # 确保获取所有历史记录以找到最新的标签
+        fetch-depth: 0
 
     - name: Get Latest Tag
       id: get_latest_tag
@@ -143,7 +141,7 @@ jobs:
       id: create_release
       uses: actions/create-release@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ steps.increment_version.outputs.new_version }}
         release_name: Release ${{ steps.increment_version.outputs.new_version }}
@@ -151,10 +149,9 @@ jobs:
         prerelease: false
 
     - name: 上传 Windows 工程到Release
-      if: matrix.os == 'windows-latest'
       uses: actions/upload-release-asset@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./dist/app-windows-latest.exe
@@ -162,10 +159,9 @@ jobs:
         asset_content_type: application/octet-stream
 
     - name: 上传 Linux 工程到Release
-      if: matrix.os == 'ubuntu-latest'
       uses: actions/upload-release-asset@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./dist/app-ubuntu-latest.AppImage
@@ -173,14 +169,11 @@ jobs:
         asset_content_type: application/octet-stream
 
     - name: 上传 macOS 工程到Release
-      if: matrix.os == 'macos-latest'
       uses: actions/upload-release-asset@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/app-macos.app/ # 注意：macOS应用通常是一个目录，而非单个文件
-        asset_name: app-macos.zip # 将整个.app目录压缩为zip文件再上传
+        asset_path: ./dist/app-macos.zip
+        asset_name: app-macos.zip
         asset_content_type: application/zip
-
-# 在构建阶段，需要确保产出的文件名与上面upload步骤中的asset_path相对应
