@@ -36,11 +36,11 @@ jobs:
       - name: 通过PyInstaller构建
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
-            pyinstaller --windowed -i icon.ico GUI.py
+            pyinstaller --windowed -D -i icon.ico GUI.py
           elif [ "$RUNNER_OS" == "Linux" ]; then
-            pyinstaller --windowed -i icon.ico GUI.py
+            pyinstaller --windowed -D -i icon.ico GUI.py
           elif [ "$RUNNER_OS" == "macOS" ]; then
-            pyinstaller --windowed -i icon.icns GUI.py
+            pyinstaller --windowed -D -i icon.icns GUI.py
           fi
         shell: bash
       
@@ -50,6 +50,11 @@ jobs:
         with:
           name: app-${{ matrix.os }}.exe
           path: dist/*.exe
+      - name: 列出dist目录的内容
+        if: startsWith(matrix.os, 'windows')  # 仅在 Windows 操作系统下运行
+        run: |
+          echo "列出dist目录的内容:"
+          ls -la dist
       
       - name: 上传 Linux 工程
         uses: actions/upload-artifact@v2
@@ -127,10 +132,6 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: 打印工作目录
-        run: echo "当前工作目录：$(pwd)"
-
-
       - name: 上传 Windows 工程到Release
         if: startsWith(runner.os, 'windows')
         uses: actions/upload-release-asset@v1
@@ -139,7 +140,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: dist/app-windows-latest.exe  # 使用实际的文件名
-          asset_name: GUI-windows-latest.exe
+          asset_name: app-windows-latest.exe
           asset_content_type: application/octet-stream
 
 
@@ -151,7 +152,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: dist/app-ubuntu-latest.AppImage  # 使用实际的文件名
-          asset_name: GUI-ubuntu-latest.AppImage
+          asset_name: app-ubuntu-latest.AppImage
           asset_content_type: application/octet-stream
 
       
@@ -162,7 +163,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/cczuical-macos-latest.zip  # 使用实际的文件名
-          asset_name: GUI-macos-latest.zip
+          asset_path: dist/app-macos.zip  # 使用实际的文件名
+          asset_name: app-macos-latest.zip
           asset_content_type: application/zip
         
