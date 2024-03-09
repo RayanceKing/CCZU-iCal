@@ -1,4 +1,5 @@
 .venv
 build/
 *.spec
+.DS_Store
 *.ics
