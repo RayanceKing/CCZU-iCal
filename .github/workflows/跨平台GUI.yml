@@ -131,7 +131,7 @@ jobs:
         if: startsWith(matrix.os, 'windows')
         run: |
           echo "Listing contents of the dist directory:"
-          ls -la ./dist
+          ls -la dist
 
       - name: 上传 Windows 工程到Release
         uses: actions/upload-release-asset@v1
@@ -139,7 +139,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/*.exe
+          asset_path: dist/*.exe
           asset_name: GUI-windows-latest.exe
           asset_content_type: application/octet-stream
 
@@ -149,7 +149,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/*.AppImage
+          asset_path: dist/*.AppImage
           asset_name: GUI-ubuntu-latest.AppImage
           asset_content_type: application/octet-stream
       
@@ -159,6 +159,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/*.zip
+          asset_path: dist/*.zip
           asset_name: GUI-macos-latest.zip
           asset_content_type: application/zip
