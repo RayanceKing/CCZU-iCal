@@ -52,7 +52,7 @@ jobs:
     
     - name: 上传 Linux 工程
       uses: actions/upload-artifact@v2
-      if: startsWith(matrix.os, 'ubuntu') # GitHub Actions uses 'ubuntu-latest' for Linux
+      if: startsWith(matrix.os, 'ubuntu')
       with:
         name: app-${{ matrix.os }}.AppImage
         path: dist/*.AppImage
@@ -61,29 +61,8 @@ jobs:
       uses: actions/upload-artifact@v2
       if: startsWith(matrix.os, 'macos')
       with:
-        name: app-${{ matrix.os }}.app
-        path: dist/*.app    
-
-    - name: 下载构建工程以供发布 (Windows)
-      if: startsWith(matrix.os, 'windows-latest')
-      uses: actions/download-artifact@v2
-      with:
-        name: app-${{ matrix.os }}.exe
-        path: dist/
-    
-    - name: 下载构建工程以供发布 (Linux)
-      if: startsWith(matrix.os, 'ubuntu-latest')
-      uses: actions/download-artifact@v2
-      with:
-        name: app-${{ matrix.os }}.AppImage
-        path: dist/
-    
-    - name: 下载构建工程以供发布 (macOS)
-      if: startsWith(matrix.os, 'macos-latest')
-      uses: actions/download-artifact@v2
-      with:
-        name: app-${{ matrix.os }}.app
-        path: dist/
+        name: app-${{ matrix.os }}.zip
+        path: dist/*.zip
     
     - name: Zip macOS Application
       if: startsWith(matrix.os, 'macos-latest')
