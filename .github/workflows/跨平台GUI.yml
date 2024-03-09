@@ -63,6 +63,34 @@ jobs:
       with:
         name: app-${{ matrix.os }}.app
         path: dist/*.app    
+ 
+    - name: Download Build Artifacts for Release
+      uses: actions/download-artifact@v2
+      with:
+        name: app-${{ matrix.os }}.exe # 对于Windows
+        path: dist/
+        if: startsWith(matrix.os, 'windows-latest')
+    
+    - name: Download Build Artifacts for Release (Linux)
+      uses: actions/download-artifact@v2
+      with:
+        name: app-${{ matrix.os }}.AppImage # 对于Linux
+        path: dist/
+        if: startsWith(matrix.os, 'ubuntu-latest')
+    
+    - name: Download Build Artifacts for Release (macOS)
+      uses: actions/download-artifact@v2
+      with:
+        name: app-${{ matrix.os }}.app # 对于macOS
+        path: dist/ # macOS应用应保持为.app目录
+        if: startsWith(matrix.os, 'macos-latest')
+    
+    # 确保在上传macOS应用时压缩.app目录
+    - name: Zip macOS Application
+      if: startsWith(matrix.os, 'macos-latest')
+      run: |
+        cd dist
+        zip -r app-macos.zip app-macos.app
 
   release:
     needs: build
@@ -110,12 +138,6 @@ jobs:
       run: |
         git tag -a ${{ steps.increment_version.outputs.new_version }} -m "Automatic release from main branch"
         git push origin ${{ steps.increment_version.outputs.new_version }}
-
-    # 下载构建产物并上传至Release
-    - name: Download Build Artifacts
-      uses: actions/download-artifact@v2
-      with:
-        path: dist
 
     - name: Create GitHub Release
       id: create_release
