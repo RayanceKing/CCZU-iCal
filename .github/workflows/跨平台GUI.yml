@@ -61,14 +61,14 @@ jobs:
       uses: actions/upload-artifact@v2
       if: startsWith(matrix.os, 'macos')
       with:
-        name: app-${{ matrix.os }}.zip
-        path: dist/*.zip
+        name: app-macos.app
+        path: dist/*.app
     
-    - name: Zip macOS Application
+    - name: 压缩 macOS 应用程序
       if: startsWith(matrix.os, 'macos-latest')
       run: |
         cd dist
-        zip -r app-macos-latest.zip app-macos-latest.app
+        zip -r app-macos.zip *.app # 使用通配符来匹配“.app”目录
       shell: bash
 
   release:
@@ -153,6 +153,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/app-macos-latest.zip
-        asset_name: app-macos-latest.zip
+        asset_path: ./dist/app-macos.zip
+        asset_name: app-macos.zip
         asset_content_type: application/zip
