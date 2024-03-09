@@ -8,8 +8,10 @@ import datetime
 import time
 import re
 import uuid
+import os
 from icalendar import Calendar, Event, Alarm
 from typing import Optional
+import shutil
 
 # 功能代码
 # 把 loginCookie, getDom, classHandler, setReminder, ICal 等函数定义放在这里
@@ -200,7 +202,7 @@ def setReminder(reminder):
 def setClassTime():
     # 从配置文件中读取上课时间
     data = []
-    with open("conf_classTime.json", "r") as f:
+    with open("/Users/wangyuliang/文件-本地/200-Code/CCZU-iCal/conf_classTime.json", "r") as f:
         data = json.load(f)
     global classTimeList
     classTimeList = data["classTime"]
@@ -389,10 +391,13 @@ def login():
         setReminder(reminder_time)
 
         print("正在生成ics文件...")
+        
+        current_directory = os.path.dirname(sys.executable)
+        ics_file_path = os.path.join(current_directory, "class.ics")
         iCal = ICal.withStrDate(first_week_date, classTimeList, courseInfoRes)
-        with open("./class.ics", "w", encoding="utf-8") as f:
+        
+        with open(ics_file_path, "w", encoding="utf-8") as f:
             f.write(iCal.to_ical())
-        print("文件保存成功")
         messagebox.showinfo("成功", "课程表已成功生成！")
     except Exception as e:
         messagebox.showerror("错误", f"发生错误：{e}")
