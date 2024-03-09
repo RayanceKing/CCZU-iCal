@@ -134,8 +134,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/app-windows-latest.exe
-        asset_name: cczuical-windows-latest.exe
+        asset_path: ./dist/GUI.exe
+        asset_name: GUI-windows-latest.exe
         asset_content_type: application/octet-stream
 
     - name: 上传 Linux 工程到Release
@@ -144,16 +144,17 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/app-ubuntu-latest.AppImage
-        asset_name: cczuical-ubuntu-latest.AppImage
+        asset_path: ./dist/GUI.AppImage
+        asset_name: GUI-ubuntu-latest.AppImage
         asset_content_type: application/octet-stream
-
+    
     - name: 上传 macOS 工程到Release
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/cczuical-macos-latest.zip
-        asset_name: cczuical-macos-latest.zip
+        asset_path: ./dist/GUI.zip
+        asset_name: GUI-macos-latest.zip
         asset_content_type: application/zip
+
