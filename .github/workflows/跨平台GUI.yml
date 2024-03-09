@@ -68,7 +68,7 @@ jobs:
       if: startsWith(matrix.os, 'macos-latest')
       run: |
         cd dist
-        zip -r app-macos.zip app-macos.app
+        zip -r app-macos-latest.zip app-macos-latest.app
       shell: bash
 
   release:
