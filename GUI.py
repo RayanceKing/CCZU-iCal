@@ -11,12 +11,7 @@ import uuid
 import os
 from icalendar import Calendar, Event, Alarm
 from typing import Optional
-import shutil
-
-# 功能代码
-# 把 loginCookie, getDom, classHandler, setReminder, ICal 等函数定义放在这里
-# ...
-
+import conf_classTime
 
 def loginCookie(
     user: str, passwd: str
@@ -31,7 +26,7 @@ def loginCookie(
         html.encoding = html.apparent_encoding
         html = html.text
     except Exception:  # 如果获取失败，退出程序
-        print("从登录页获取随机信息失败")
+        # print("从登录页获取随机信息失败")
         sys.exit(0)
 
     # 初始化字符串，使其可用于xpath的函数
@@ -57,7 +52,7 @@ def loginCookie(
     # 官方登录
     sc = session.post(url, headers=headers, data=data)
     if not sc.cookies.get_dict():
-        print("用户名或密码错误，请检查重试")
+        messagebox.showerror("错误", "用户名或密码错误，请检查重试")
         sys.exit(0)
 
     # 拦截跳转链接
@@ -69,20 +64,18 @@ def loginCookie(
         tmp_html = etree.HTML(tmp.text)
         Rurl = tmp_html.xpath("//a[@href and text()]/@href")[0]
     except Exception:
-        print("获取跳转链接失败")
+        messagebox.showerror("错误", "获取跳转链接失败")
         sys.exit(0)
 
     # 从DirectPage获取我们需要的Cookie
     try:
         tmp2 = session.get(Rurl, headers=headers)
     except Exception:
-        print("获取实用Cookies失败")
+        messagebox.showerror("错误", "获取实用Cookies失败")
         sys.exit(0)
 
     # 提取cookie字典并返回它。
-    print("获取Cookies成功")
     return tmp2.cookies.get_dict()
-
 
 # 定义函数，传入学号和密码，返回Cookies
 
@@ -175,7 +168,6 @@ def classHandler(text):
             courseList[str(purecourse)] = course
     # 将课程列表转换为课程信息列表
     courseInfoRes = [course for course in courseList.values()]
-    print("课表格式化成功")
 
 
 # 定义函数，传入课表，返回ics文件
@@ -193,20 +185,28 @@ def setReminder(reminder):
     # 将时间格式转换为ics文件中的时间格式
     time_map = map(lambda x: x if x else "0", time_tuple)
     timeReminder = "-P{}DT{}H{}M{}S".format(*list(time_map))
-    print("SetReminder:", timeReminder)
 
 
 # 定义函数，传入课表，返回ics文件
 
-
-def setClassTime():
+# 为了方便打包
+'''def setClassTime():
     # 从配置文件中读取上课时间
     data = []
-    with open("/Users/wangyuliang/文件-本地/200-Code/CCZU-iCal/conf_classTime.json", "r") as f:
+    with open("conf_classTime.json", "r") as f:
         data = json.load(f)
     global classTimeList
     classTimeList = data["classTime"]
-    print("上课时间配置成功")
+    print("上课时间配置成功")'''
+
+
+def setClassTime():
+    # 从 conf_classTime.py 文件中获取上课时间
+    class_times = conf_classTime.ClassSchedule().get_class_times()
+    global classTimeList
+    classTimeList = class_times
+    
+
 
 
 def save(string):
@@ -362,15 +362,13 @@ def login():
         messagebox.showerror("错误", "提醒时间请输入数字。")
         return
     if len(first_week_date) != 8 or not first_week_date.isdigit():
-        messagebox.showerror("错误", "请输入正确格式的日期（如：20230904）。")
+        messagebox.showerror("错误", "请输入正确格式的日期（如：20240226）。")
         return
 
     # 这里调用功能代码中的函数
     try:
-        print("开始获取Cookies...")
         cookies = loginCookie(student_number, password)  # 使用用户输入的学号和密码
 
-        print("开始获取课表...")
         dom = getDom(cookies)
         if not dom:
             messagebox.showerror("错误", "获取课表失败，请重试。")
@@ -378,24 +376,16 @@ def login():
         else:
             print("获取课表成功")
 
-        print("开始课表格式化...")
         classHandler(dom)
-
-        print("正在配置上课时间...")
+        # 配置课表时间
         setClassTime()
-
-        print("正在配置第一周周一日期...")
+        # 配置第一周日期
         print("SetFirstWeekDate:", first_week_date)
-
-        print("正在配置课前提醒...")
+        # 配置课前提醒
         setReminder(reminder_time)
-
-        print("正在生成ics文件...")
-        
         current_directory = os.path.dirname(sys.executable)
         ics_file_path = os.path.join(current_directory, "class.ics")
-        iCal = ICal.withStrDate(first_week_date, classTimeList, courseInfoRes)
-        
+        iCal = ICal.withStrDate(first_week_date, classTimeList, courseInfoRes)      
         with open(ics_file_path, "w", encoding="utf-8") as f:
             f.write(iCal.to_ical())
         messagebox.showinfo("成功", "课程表已成功生成！")
@@ -442,7 +432,7 @@ entry_reminder = tk.Entry(frame_login)
 entry_reminder.grid(row=2, column=1)
 
 # 第一周星期一日期输入
-label_first_week_date = tk.Label(frame_login, text="第一周星期一（如20230904）：")
+label_first_week_date = tk.Label(frame_login, text="第一周星期一（如20240226）：")
 label_first_week_date.grid(row=3, column=0, sticky="e")
 entry_first_week_date = tk.Entry(frame_login)
 entry_first_week_date.grid(row=3, column=1)
