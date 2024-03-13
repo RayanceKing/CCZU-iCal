@@ -8,7 +8,10 @@ on:
 jobs:
   release:
     name: 发布可执行文件
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
 
     steps:
     - name: Checkout 代码
