@@ -47,28 +47,28 @@ jobs:
       uses: actions/upload-artifact@v2
       if: startsWith(matrix.os, 'windows')
       with:
-        name: app-windows-latest.exe
+        name: app-${{ matrix.os }}.exe
         path: dist/*.exe
     
     - name: 上传 Linux 工程
       uses: actions/upload-artifact@v2
       if: startsWith(matrix.os, 'ubuntu')
       with:
-        name: app-ubuntu-latest.AppImage
+        name: app-${{ matrix.os }}.AppImage
         path: dist/*.AppImage
-        
+    
     - name: 上传 macOS 工程
       uses: actions/upload-artifact@v2
       if: startsWith(matrix.os, 'macos')
       with:
-        name: app-macos-latest.app
+        name: app-${{ matrix.os }}.app
         path: dist/*.app
     
     - name: 压缩 macOS 应用程序
       if: startsWith(matrix.os, 'macos-latest')
       run: |
         cd dist
-        zip -r app-macos-latest.zip *.app # 使用通配符来匹配“.app”目录
+        zip -r app-macos.zip *.app # 使用通配符来匹配“.app”目录
       shell: bash
 
   release:
@@ -111,12 +111,12 @@ jobs:
         echo "NEW_VERSION=$NEW_VERSION"
         echo "::set-output name=new_version::$NEW_VERSION"
 
-    - name: 创建新标签
+    - name: Create New Tag
       run: |
         git tag -a ${{ steps.increment_version.outputs.new_version }} -m "Automatic release from main branch"
         git push origin ${{ steps.increment_version.outputs.new_version }}
 
-    - name: 创建release
+    - name: Create GitHub Release
       id: create_release
       uses: actions/create-release@v1
       env:
@@ -126,34 +126,3 @@ jobs:
         release_name: Release ${{ steps.increment_version.outputs.new_version }}
         draft: false
         prerelease: false
-
-    - name: 上传到release资产windows
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dist/app-windows-latest.exe
-        asset_name: app-windows-latest.exe
-        asset_content_type: application/vnd.microsoft.portable-executable
-
-    - name: 上传到release资产ubuntu
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dist/app-ubuntu-latest.AppImage
-        asset_name: app-ubuntu-latest.AppImage
-        asset_content_type: application/vnd.appimage
-
-    - name: 上传到release资产macOS
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: dist/app-macos-latest.zip
-        asset_name: app-macos-latest.zip
-        asset_content_type: application/zip
-    
