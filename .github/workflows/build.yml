@@ -87,42 +87,42 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Get Latest Tag
+    - name: 获取最新标签
       id: get_latest_tag
       run: |
         LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
         echo "::set-output name=latest_tag::$LATEST_TAG"
 
-    - name: Parse and Increment Version
-      id: increment_version
-      run: |
-        MAJOR=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | cut -d'.' -f1 | sed 's/v//')
-        MINOR=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | cut -d'.' -f2)
-        PATCH=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | cut -d'.' -f3)
+    #- name: Parse and Increment Version
+    #  id: increment_version
+    #  run: |
+    #    MAJOR=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | cut -d'.' -f1 | sed 's/v//')
+    #    MINOR=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | cut -d'.' -f2)
+    #    PATCH=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | cut -d'.' -f3)
 
-        ((PATCH++))
+    #    ((PATCH++))
 
-        if [ $PATCH -ge 10 ]; then
-          ((MINOR++))
-          PATCH=1
-        fi
+    #    if [ $PATCH -ge 10 ]; then
+    #      ((MINOR++))
+    #      PATCH=1
+    #    fi
 
-        NEW_VERSION=v$MAJOR.$MINOR.$PATCH
-        echo "NEW_VERSION=$NEW_VERSION"
-        echo "::set-output name=new_version::$NEW_VERSION"
+    #    NEW_VERSION=v$MAJOR.$MINOR.$PATCH
+    #    echo "NEW_VERSION=$NEW_VERSION"
+    #    echo "::set-output name=new_version::$NEW_VERSION"
 
-    - name: Create New Tag
-      run: |
-        git tag -a ${{ steps.increment_version.outputs.new_version }} -m "Automatic release from main branch"
-        git push origin ${{ steps.increment_version.outputs.new_version }}
+    #- name: Create New Tag
+    #  run: |
+    #    git tag -a ${{ steps.increment_version.outputs.new_version }} -m "Automatic release from main branch"
+    #    git push origin ${{ steps.increment_version.outputs.new_version }}
 
-    - name: Create GitHub Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.increment_version.outputs.new_version }}
-        release_name: Release ${{ steps.increment_version.outputs.new_version }}
-        draft: false
-        prerelease: false
+    #- name: Create GitHub Release
+    #  id: create_release
+    #  uses: actions/create-release@v1
+    #  env:
+    #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #  with:
+    #    tag_name: ${{ steps.increment_version.outputs.new_version }}
+    #    release_name: Release ${{ steps.increment_version.outputs.new_version }}
+    #    draft: false
+    #    prerelease: false
