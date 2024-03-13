@@ -14,14 +14,10 @@ jobs:
     - name: Checkout 代码
       uses: actions/checkout@v2
       
-    - name: 列出 artifact
-      run: ls -l dist
-      
     - name: 下载 artifact
       uses: actions/download-artifact@v2
       with:
         name: GUI*
-
 
     - name: 创建 Release
       id: create_release
@@ -41,6 +37,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./app-${{ matrix.os }}.*
+        asset_path: ./dist/*
         asset_name: app-${{ matrix.os }}.*
         asset_content_type: application/octet-stream
