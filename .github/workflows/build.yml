@@ -1,11 +1,9 @@
-name: 构建和发布
+name: 构建
 
 on:
   push:
     branches:
       - main
-  release:
-    types: [created] # 监听创建新的Release事件
 
 jobs:
   build:
@@ -72,109 +70,3 @@ jobs:
         cd dist
         zip -r app-macos.zip *.app # 使用通配符来匹配“.app”目录
       shell: bash
-
-  attach-artifacts-to-release:
-    needs: build
-    if: github.event_name == 'release' && github.event.action == 'created'
-    runs-on: ubuntu-latest
-    steps:
-    - name: Download Artifacts
-      id: download_artifacts
-      uses: actions/download-artifact@v2
-      with:
-        path: artifacts/
-
-    - name: Get Release details
-      id: get_release
-      run: |
-        RELEASE_ID=$(echo "${{ github.event.release.id }}" | jq -R .)
-        echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
-      shell: bash
-
-    - name: Upload Windows artifact to Release
-      if: startsWith(matrix.os, 'windows')
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }} # 获取当前Release的上传URL
-        asset_path: artifacts/app-windows.exe
-        asset_name: app-windows.exe
-        asset_content_type: application/vnd.microsoft.portable-executable
-
-    - name: Upload Linux artifact to Release
-      if: startsWith(matrix.os, 'ubuntu')
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: artifacts/app-ubuntu-latest
-        asset_name: app-linux.tar.gz # 假设Linux版本已经压缩为tar.gz
-        asset_content_type: application/gzip
-
-    - name: Upload macOS artifact to Release
-      if: startsWith(matrix.os, 'macos')
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: artifacts/app-macos.zip
-        asset_name: app-macos.zip
-        asset_content_type: application/zip
-  #release:
-  #  needs: build
-  #  runs-on: ubuntu-latest
-  #  steps:
-  #  - uses: actions/checkout@v2
-
-  #  - name: Set Git config
-  #    run: |
-  #      git config user.name "GitHub Actions Bot"
-  #      git config user.email "github-actions[bot]@users.noreply.github.com"
-
-  #  - name: Checkout code (用于创建新标签)
-  #    uses: actions/checkout@v2
-  #    with:
-  #      fetch-depth: 0
-
-  #  - name: 获取最新标签
-  #    id: get_latest_tag
-  #    run: |
-  #      LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
-  #      echo "::set-output name=latest_tag::$LATEST_TAG"
-
-    #- name: Parse and Increment Version
-    #  id: increment_version
-    #  run: |
-    #    MAJOR=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | cut -d'.' -f1 | sed 's/v//')
-    #    MINOR=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | cut -d'.' -f2)
-    #    PATCH=$(echo ${{ steps.get_latest_tag.outputs.latest_tag }} | cut -d'.' -f3)
-
-    #    ((PATCH++))
-
-    #    if [ $PATCH -ge 10 ]; then
-    #      ((MINOR++))
-    #      PATCH=1
-    #    fi
-
-    #    NEW_VERSION=v$MAJOR.$MINOR.$PATCH
-    #    echo "NEW_VERSION=$NEW_VERSION"
-    #    echo "::set-output name=new_version::$NEW_VERSION"
-
-    #- name: Create New Tag
-    #  run: |
-    #    git tag -a ${{ steps.increment_version.outputs.new_version }} -m "Automatic release from main branch"
-    #    git push origin ${{ steps.increment_version.outputs.new_version }}
-
-    #- name: Create GitHub Release
-    #  id: create_release
-    #  uses: actions/create-release@v1
-    #  env:
-    #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #  with:
-    #    tag_name: ${{ steps.increment_version.outputs.new_version }}
-    #    release_name: Release ${{ steps.increment_version.outputs.new_version }}
-    #    draft: false
-    #    prerelease: false
