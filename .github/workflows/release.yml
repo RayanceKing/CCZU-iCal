@@ -1,57 +1,77 @@
-name: Release
+name: 发布构建产出物到GitHub Release
 
 on:
-  push:
-    tags:
-      - "*"
-
-permissions:
-  contents: write
+  workflow_run:
+    workflows: ["构建和发布"] 
+    branches: [main]
+    types:
+      - completed
 
 jobs:
-  publish:
-    name: Publish for ${{ matrix.target }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - target: aarch64-apple-darwin
-            os: macos-latest
-            artifact_name: cczu-ical-macos.app
-            asset_name: cczu-ical-macos
-            binsuffix: .app
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
-            artifact_name: app-linux-latest
-            asset_name: app-linux-latest
-            binsuffix: ""
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
-            artifact_name: app-windows-latest.exe
-            asset_name: app-windows-latest
-            binsuffix: .exe
-
+  publish_release:
+    runs-on: ubuntu-latest
+    needs: build
     steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust
-        run: rustup update stable
-      - name: Install cross-compilation tools
-        uses: taiki-e/setup-cross-toolchain-action@v1
-        with:
-          target: ${{ matrix.target }}
-      - name: Build
-        run: cargo build --release
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
-          asset_name: ${{ matrix.asset_name }}${{ matrix.binsuffix }}
-          tag: ${{ github.ref }}
-      - name: Upload libraries to release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/${{ matrix.target }}/release/${{ matrix.libname }}
-          asset_name: ${{ matrix.asset_name }}-lib${{ matrix.libsuffix }}
-          tag: ${{ github.ref }}
+    - name: Checkout代码
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: 获取最新构建的版本标签
+      id: get_latest_tag
+      run: |
+        LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+        echo "::set-output name=latest_tag::$LATEST_TAG"
+
+    - name: 获取构建产出物
+      id: download_artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: dist/releases
+        name: artifacts # 假设你在构建阶段上传的所有Artifacts都被命名为"artifacts"
+
+    - name: 创建GitHub Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.get_latest_tag.outputs.latest_tag }}
+        release_name: Release ${{ steps.get_latest_tag.outputs.latest_tag }}
+        draft: false
+        prerelease: false
+
+    - name: 上传Windows应用程序到Release
+      if: startsWith(steps.download_artifacts.outputs.artifacts_name, 'app-windows')
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }} # 这会自动包含access_token
+        asset_path: dist/releases/app-windows.exe
+        asset_name: app-windows.exe
+        asset_content_type: application/vnd.microsoft.portable-executable
+
+    - name: 上传Linux应用程序到Release
+      if: startsWith(steps.download_artifacts.outputs.artifacts_name, 'app-ubuntu')
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: dist/releases/app-ubuntu
+        asset_name: app-linux
+        asset_content_type: application/octet-stream
+
+    - name: 上传macOS应用程序到Release
+      if: startsWith(steps.download_artifacts.outputs.artifacts_name, 'app-macos.app')
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: dist/releases/app-macos.app.zip
+        asset_name: app-macos.zip
+        asset_content_type: application/zip
+
+# 注意：这里假设 macOS 应用程序已经被压缩为 zip 文件，在构建时直接上传了压缩后的文件。
