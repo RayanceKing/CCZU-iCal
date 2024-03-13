@@ -17,12 +17,11 @@ jobs:
     - name: 检测 artifact 文件
       run: |
         ls -l dist
-
       
     - name: 下载 artifact
       uses: actions/download-artifact@v2
       with:
-        name: app*
+        name: GUI.*
 
     - name: 创建 Release
       id: create_release
