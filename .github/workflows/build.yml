@@ -1,9 +1,13 @@
-name: 构建
+name: 自动构建与发布
 
 on:
   push:
     branches:
       - main
+      - dev
+      - hotfix/*
+    tags:
+      - '*'
 
 jobs:
   build:
@@ -15,62 +19,119 @@ jobs:
         python-version: [3.11.7]
 
     steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-    
-    - name: 安装Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    
-    - name: 安装依赖
-      run: |
-        pip install -r requirements.txt
-    
-    - name: 安装PyInstaller
-      run: |
-        pip install pyinstaller
-    
-    - name: 通过PyInstaller构建
-      run: |
-        if [ "$RUNNER_OS" == "Windows" ]; then
-          pyinstaller --onefile --windowed -y -i icon.ico GUI.py
-        elif [ "$RUNNER_OS" == "Linux" ]; then
-          pyinstaller --onefile --windowed -y -i icon.ico GUI.py
-        elif [ "$RUNNER_OS" == "macOS" ]; then
-          pyinstaller --onefile --windowed -y -i icon.icns GUI.py
-        fi
-      shell: bash
-    
-    - name: 上传 Windows 工程
-      uses: actions/upload-artifact@v2
-      if: startsWith(matrix.os, 'windows')
-      with:
-        name: app-${{ matrix.os }}.exe
-        path: dist/*.exe
-    
-    - name: 上传 Linux 工程
-      uses: actions/upload-artifact@v2
-      if: startsWith(matrix.os, 'ubuntu')
-      with:
-        name: app-${{ matrix.os }}
-        path: dist/GUI
-    
-    - name: 上传 macOS 工程
-      uses: actions/upload-artifact@v2
-      if: startsWith(matrix.os, 'macos')
-      with:
-        name: app-${{ matrix.os }}.app
-        path: dist/*.app
-    
-    - name: 压缩 macOS 应用程序
-      if: startsWith(matrix.os, 'macos-latest')
-      run: |
-        cd dist
-        zip -r app-macos.zip *.app # 使用通配符来匹配“.app”目录
-      shell: bash
+      - name: Checkout 代码
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      
+      - name: 安装Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: 安装依赖
+        run: |
+          pip install -r requirements.txt
+      
+      - name: 安装PyInstaller
+        run: |
+          pip install pyinstaller
+      
+      - name: 通过PyInstaller构建
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            pyinstaller --onefile --windowed -y -i icon.ico GUI.py
+          elif [ "$RUNNER_OS" == "Linux" ]; then
+            pyinstaller --onefile --windowed -y -i icon.ico GUI.py
+          elif [ "$RUNNER_OS" == "macOS" ]; then
+            pyinstaller --onefile --windowed -y -i icon.icns GUI.py
+          fi
+        shell: bash
+      
+      - name: 上传 Windows 工程
+        id: upload-windows-artifact
+        uses: actions/upload-artifact@v2
+        if: startsWith(matrix.os, 'windows')
+        with:
+          name: app-${{ matrix.os }}.exe
+          path: dist/*.exe
+      
+      - name: 上传 Linux 工程
+        id: upload-linux-artifact
+        uses: actions/upload-artifact@v2
+        if: startsWith(matrix.os, 'ubuntu')
+        with:
+          name: app-${{ matrix.os }}
+          path: dist/GUI
+      
+      - name: 上传 macOS 工程
+        id: upload-macos-artifact
+        uses: actions/upload-artifact@v2
+        if: startsWith(matrix.os, 'macos')
+        with:
+          name: app-${{ matrix.os }}.app
+          path: dist/*.app
+      
+      - name: 压缩 macOS 应用程序
+        if: startsWith(matrix.os, 'macos-latest')
+        run: |
+          cd dist
+          zip -r app-macos.zip *.app # 使用通配符来匹配“.app”目录
+        shell: bash
+      
+      - name: 列出 artifact
+        run: ls -l dist
 
-    - name: 列出 artifact
-      run: ls -l dist
+  update-version:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout 代码
+        uses: actions/checkout@v2
 
+      - name: 解析分支类型
+        id: parse-branch
+        run: |
+          branch=$(echo $GITHUB_REF | awk -F'/' '{print $NF}')
+          if [ "$branch" == "main" ]; then
+            new_version=$(awk -F'.' '{$NF++; print $0}' version.txt)
+          elif [ "$branch" == "dev" ]; then
+            new_version=$(awk -F'.' '{$2++; print $0}' version.txt)
+          elif [[ "$branch" == "hotfix"* ]]; then
+            version=$(awk -F'.' '{print $3}' version.txt)
+            new_version=$(awk -F'.' '{$3=$3+1; print $0}' version.txt)
+            if [ "$version" == "9" ]; then
+              new_version=$(awk -F'.' '{$2=$2+1; $3=0; print $0}' version.txt)
+            fi
+          fi
+          echo "::set-output name=new_version::$new_version"
+
+      - name: 更新版本号
+        run: echo "${{ steps.parse-branch.outputs.new_version }}" > version.txt
+
+      - name: 提交更新
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -a -m "Update version number" || true
+          git push
+
+      - name: 发布 release
+        id: release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        with:
+          tag_name: v${{ steps.parse-branch.outputs.new_version }}
+          release_name: Release v${{ steps.parse-branch.outputs.new_version }}
+          draft: false
+          prerelease: false
+
+      - name: 上传发布的附件
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        with:
+          upload_url: ${{ steps.release.outputs.upload_url }}
+          asset_path: dist/*
