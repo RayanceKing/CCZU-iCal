@@ -135,3 +135,5 @@ jobs:
         with:
           upload_url: ${{ steps.release.outputs.upload_url }}
           asset_path: dist/*
+          asset_name: app-${{ github.run_id }}-${{ matrix.os }}-${{ steps.parse-branch.outputs.new_version }}.zip
+          asset_content_type: application/zip
