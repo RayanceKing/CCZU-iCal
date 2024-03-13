@@ -70,3 +70,7 @@ jobs:
         cd dist
         zip -r app-macos.zip *.app # 使用通配符来匹配“.app”目录
       shell: bash
+
+    - name: 列出 artifact
+      run: ls -l dist
+
