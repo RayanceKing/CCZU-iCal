@@ -50,7 +50,7 @@ jobs:
         name: app-windows-latest.exe
         path: dist/*.exe
     
-    # - name: 上传 Linux 工程
+    #- name: 上传 Linux 工程
     #  uses: actions/upload-artifact@v2
     #  if: startsWith(matrix.os, 'ubuntu')
     #  with:
