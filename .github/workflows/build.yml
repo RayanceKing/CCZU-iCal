@@ -89,6 +89,18 @@ jobs:
       - name: Checkout 代码
         uses: actions/checkout@v2
 
+      - name: 获取最新标签
+        id: get-latest-tag
+        run: |
+          latest_tag=$(git describe --tags --abbrev=0)
+          echo "::set-output name=latest_tag::$latest_tag"
+
+      - name: 提取版本号
+        id: extract-version
+        run: |
+          version=$(echo "${{ steps.get-latest-tag.outputs.latest_tag }}" | sed 's/v//')
+          echo "::set-output name=version::$version"
+
       - name: 解析分支类型
         id: parse-branch
         run: |
