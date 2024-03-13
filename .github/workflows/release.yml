@@ -13,11 +13,16 @@ jobs:
     steps:
     - name: Checkout 代码
       uses: actions/checkout@v2
+
+    - name: 检测 artifact 文件
+      run: |
+        ls -l dist
+
       
     - name: 下载 artifact
       uses: actions/download-artifact@v2
       with:
-        name: GUI*
+        name: app*
 
     - name: 创建 Release
       id: create_release
