@@ -14,6 +14,9 @@ jobs:
     - name: Checkout 代码
       uses: actions/checkout@v2
       
+    - name: 列出 artifact
+      run: ls -l dist
+      
     - name: 下载 artifact
       uses: actions/download-artifact@v2
       with:
