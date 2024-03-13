@@ -54,8 +54,8 @@ jobs:
       uses: actions/upload-artifact@v2
       if: startsWith(matrix.os, 'ubuntu')
       with:
-        name: app-${{ matrix.os }}.AppImage
-        path: dist/*.AppImage
+        name: app-${{ matrix.os }}
+        path: dist/app-ubuntu-latest
     
     - name: 上传 macOS 工程
       uses: actions/upload-artifact@v2
