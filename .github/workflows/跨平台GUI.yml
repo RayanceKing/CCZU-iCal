@@ -35,11 +35,11 @@ jobs:
     - name: 通过PyInstaller构建
       run: |
         if [ "$RUNNER_OS" == "Windows" ]; then
-          pyinstaller --onefile --windowed -i icon.ico GUI.py
+          pyinstaller --onefile --windowed -y -i icon.ico GUI.py
         elif [ "$RUNNER_OS" == "Linux" ]; then
-          pyinstaller --onefile --windowed -i icon.ico GUI.py
+          pyinstaller --onefile --windowed -y -i icon.ico GUI.py
         elif [ "$RUNNER_OS" == "macOS" ]; then
-          pyinstaller --onefile --windowed -i icon.icns GUI.py
+          pyinstaller --onefile --windowed -y -i icon.icns GUI.py
         fi
       shell: bash
     
