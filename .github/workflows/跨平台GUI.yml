@@ -49,13 +49,33 @@ jobs:
       with:
         name: app-windows-latest.exe
         path: dist/*.exe
+
+    - name: 上传 Windows 工程到Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/*.exe
+        asset_name: app-windows-latest.exe
+        asset_content_type: application/octet-stream
     
-    #- name: 上传 Linux 工程
-    #  uses: actions/upload-artifact@v2
-    #  if: startsWith(matrix.os, 'ubuntu')
-    #  with:
-    #    name: app-ubuntu-latest.AppImage
-    #    path: dist/*.AppImage
+    - name: 上传 Linux 工程
+      uses: actions/upload-artifact@v2
+      if: startsWith(matrix.os, 'ubuntu')
+      with:
+        name: app-ubuntu-latest.AppImage
+        path: dist/*.AppImage
+
+    - name: 上传 Linux 工程到Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/*.AppImage
+        asset_name: app-ubuntu-latest.AppImage
+        asset_content_type: application/octet-stream
     
     - name: 上传 macOS 工程
       uses: actions/upload-artifact@v2
@@ -70,6 +90,16 @@ jobs:
         cd dist
         zip -r app-macos-latest.zip *.app # 使用通配符来匹配“.app”目录
       shell: bash
+
+    - name: 上传 macOS 工程到Release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/*.zip
+        asset_name: app-macos-latest.zip
+        asset_content_type: application/zip
 
   release:
     needs: build
@@ -127,32 +157,4 @@ jobs:
         draft: false
         prerelease: false
 
-    - name: 上传 Windows 工程到Release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/*.exe
-        asset_name: app-windows-latest.exe
-        asset_content_type: application/octet-stream
-
-    #- name: 上传 Linux 工程到Release
-    #  uses: actions/upload-release-asset@v1
-    #  env:
-    #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #  with:
-    #    upload_url: ${{ steps.create_release.outputs.upload_url }}
-    #    asset_path: ./dist/*.AppImage
-    #    asset_name: app-ubuntu-latest.AppImage
-    #    asset_content_type: application/octet-stream
-
-    - name: 上传 macOS 工程到Release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/*.zip
-        asset_name: app-macos-latest.zip
-        asset_content_type: application/zip
+    
