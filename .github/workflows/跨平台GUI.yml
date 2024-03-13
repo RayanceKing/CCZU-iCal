@@ -50,12 +50,12 @@ jobs:
         name: app-windows-latest.exe
         path: dist/*.exe
     
-    - name: 上传 Linux 工程
-      uses: actions/upload-artifact@v2
-      if: startsWith(matrix.os, 'ubuntu')
-      with:
-        name: app-ubuntu-latest.AppImage
-        path: dist/*.AppImage
+    # - name: 上传 Linux 工程
+    #  uses: actions/upload-artifact@v2
+    #  if: startsWith(matrix.os, 'ubuntu')
+    #  with:
+    #    name: app-ubuntu-latest.AppImage
+    #    path: dist/*.AppImage
     
     - name: 上传 macOS 工程
       uses: actions/upload-artifact@v2
@@ -137,15 +137,15 @@ jobs:
         asset_name: app-windows-latest.exe
         asset_content_type: application/octet-stream
 
-    - name: 上传 Linux 工程到Release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/*.AppImage
-        asset_name: app-ubuntu-latest.AppImage
-        asset_content_type: application/octet-stream
+    #- name: 上传 Linux 工程到Release
+    #  uses: actions/upload-release-asset@v1
+    #  env:
+    #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #  with:
+    #    upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #    asset_path: ./dist/*.AppImage
+    #    asset_name: app-ubuntu-latest.AppImage
+    #    asset_content_type: application/octet-stream
 
     - name: 上传 macOS 工程到Release
       uses: actions/upload-release-asset@v1
