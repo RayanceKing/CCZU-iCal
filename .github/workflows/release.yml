@@ -1,4 +1,4 @@
-name: Release
+name: 发布可执行文件
 
 on:
   push:
@@ -7,22 +7,36 @@ on:
 
 jobs:
   release:
-    name: Release
+    name: 发布可执行文件
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout 代码
       uses: actions/checkout@v2
-
-    - name: Extract tag version
-      id: extract_version
-      run: echo ::set-output name=tag_version::${GITHUB_REF#refs/tags/}
-
-    - name: Upload release assets
-      uses: actions/upload-release-asset@v1
+      
+    - name: 下载 artifact
+      uses: actions/download-artifact@v2
       with:
-        upload_url: ${{ github.event.repository.releases[0].upload_url }}
-        asset_path: dist/*
-        asset_name: app-${{ steps.extract_version.outputs.tag_version }}-${{ matrix.os }}.zip
-        asset_content_type: application/zip
-        token: ${{ secrets.GITHUB_TOKEN }}
+        name: app-${{ matrix.os }}.*
+
+    - name: 创建 Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+    - name: 上传可执行文件
+      id: upload-release-asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./app-${{ matrix.os }}.*
+        asset_name: app-${{ matrix.os }}.*
+        asset_content_type: application/octet-stream
