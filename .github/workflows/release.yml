@@ -20,7 +20,7 @@ jobs:
     - name: 下载 artifact
       uses: actions/download-artifact@v2
       with:
-        name: app-${{ matrix.os }}*
+        name: GUI*
 
 
     - name: 创建 Release
