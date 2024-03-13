@@ -3,7 +3,6 @@ from tkinter import messagebox
 import sys
 import requests
 from lxml import etree
-import json
 import datetime
 import time
 import re
@@ -11,7 +10,8 @@ import uuid
 import os
 from icalendar import Calendar, Event, Alarm
 from typing import Optional
-import conf_classTime
+from conf_classTime import class_time_config
+import platform
 
 def loginCookie(
     user: str, passwd: str
@@ -201,10 +201,9 @@ def setReminder(reminder):
 
 
 def setClassTime():
-    # 从 conf_classTime.py 文件中获取上课时间
-    class_times = conf_classTime.ClassSchedule().get_class_times()
+    # 直接从导入的模块中读取上课时间
     global classTimeList
-    classTimeList = class_times
+    classTimeList = class_time_config["classTime"]
     
 
 
@@ -383,15 +382,32 @@ def login():
         print("SetFirstWeekDate:", first_week_date)
         # 配置课前提醒
         setReminder(reminder_time)
-        current_directory = os.path.dirname(sys.executable)
-        ics_file_path = os.path.join(current_directory, "class.ics")
-        iCal = ICal.withStrDate(first_week_date, classTimeList, courseInfoRes)      
+        
+        iCal = ICal.withStrDate(first_week_date, classTimeList, courseInfoRes)   
+        ics_file_path = get_save_path()
         with open(ics_file_path, "w", encoding="utf-8") as f:
             f.write(iCal.to_ical())
         messagebox.showinfo("成功", "课程表已成功生成！")
     except Exception as e:
         messagebox.showerror("错误", f"发生错误：{e}")
 
+# 根据操作系统获取保存路径
+def get_save_path():
+    system = platform.system()
+    if system == "Windows":
+        desktop_path = os.path.join(os.path.join(
+            os.environ['USERPROFILE']), 'Desktop')
+        return os.path.join(desktop_path, "class.ics")
+    elif system == "Darwin":  # macOS
+        return os.path.join(os.path.join(os.path.expanduser('~')), 'Downloads', "class.ics")
+    elif system == "Linux":
+        return os.path.join(os.path.join(os.path.expanduser('~')), 'Downloads', "class.ics")
+    else:
+        raise OSError("Unsupported operating system")
+
+
+# 在代码中调用 get_save_path() 函数来获取保存路径
+ics_file_path = get_save_path()
 # 主函数
 if __name__ == "__main__":
     firstWeekDate = None
