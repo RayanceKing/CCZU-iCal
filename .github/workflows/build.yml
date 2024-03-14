@@ -94,16 +94,18 @@ jobs:
         uses: actions/github-script@v5
         with:
           script: |
-            const { repo: { owner, repo }, payload: { ref } } = context;
-            const oldTag = ref.startsWith('refs/tags/') ? ref.replace('refs/tags/', '') : '';
+            const { repo: { owner, repo } } = context;
+            let tags = await github.rest.repos.listTags({
+              owner: owner,
+              repo: repo,
+            });
+            tags = tags.data.map(tag => tag.name);
             let newTag = 'v1.0.0';
 
-            if (oldTag) {
-              const versionParts = oldTag.replace('v', '').split('.');
-              const major = parseInt(versionParts[0], 10);
-              let minor = parseInt(versionParts[1], 10);
-              let patch = parseInt(versionParts[2], 10);
-
+            if (tags.length > 0) {
+              const latestTag = tags.sort().pop();
+              let [major, minor, patch] = latestTag.replace('v', '').split('.').map(num => parseInt(num));
+              
               if (patch === 9) {
                 minor += 1;
                 patch = 0;
@@ -111,17 +113,25 @@ jobs:
                 patch += 1;
               }
 
+              if (minor === 10) {
+                major += 1;
+                minor = 0;
+              }
+
               newTag = `v${major}.${minor}.${patch}`;
-            }
-
-            const newTagExists = await github.rest.repos.getReleaseByTag({
-              owner,
-              repo,
-              tag: newTag
-            }).then(() => true, () => false);
-
-            if (newTagExists) {
-              core.setFailed(`The tag \`${newTag}\` already exists.`);
+              while (tags.includes(newTag)) {
+                if (patch === 9) {
+                  minor += 1;
+                  patch = 0;
+                } else {
+                  patch += 1;
+                }
+                if (minor === 10) {
+                  major += 1;
+                  minor = 0;
+                }
+                newTag = `v${major}.${minor}.${patch}`;
+              }
             }
 
             core.setOutput('new_tag', newTag);
