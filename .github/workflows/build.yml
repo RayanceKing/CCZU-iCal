@@ -20,12 +20,12 @@ jobs:
 
     steps:
       - name: Checkout 代码
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       
       - name: 安装Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       
@@ -50,7 +50,7 @@ jobs:
       
       - name: 上传 Windows 工程
         id: upload-windows-artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: startsWith(matrix.os, 'windows')
         with:
           name: app-${{ matrix.os }}.exe
@@ -58,7 +58,7 @@ jobs:
       
       - name: 上传 Linux 工程
         id: upload-linux-artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: startsWith(matrix.os, 'ubuntu')
         with:
           name: app-${{ matrix.os }}
@@ -66,7 +66,7 @@ jobs:
       
       - name: 上传 macOS 工程
         id: upload-macos-artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: startsWith(matrix.os, 'macos')
         with:
           name: app-${{ matrix.os }}.app
@@ -87,7 +87,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 代码
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       
       - name: 自动版本标签
         id: tag_version
@@ -138,7 +138,7 @@ jobs:
       
       - name: 创建发布
         id: create_release
-        uses: actions/create-release@v1
+        uses: actions/create-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
@@ -146,6 +146,9 @@ jobs:
           release_name: Release ${{ steps.tag_version.outputs.new_tag }}
           draft: false
           prerelease: false
+
+      - name: 列出构建文件
+        run: ls -l ./dist/
       
       - name: 上传 Windows 构建至发布
         uses: actions/upload-release-asset@v1
@@ -153,27 +156,27 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/app-windows-latest.exe
+          asset_path: ./dist/*.exe
           asset_name: app-windows-latest.exe
           asset_content_type: application/octet-stream
       
       - name: 上传 Linux 构建至发布
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-release-asset@v2
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/app-ubuntu-latest
+          asset_path: ./dist/GUI
           asset_name: app-ubuntu-latest
           asset_content_type: application/octet-stream
       
       - name: 上传 macOS 构建及压缩文件至发布
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-release-asset@v2
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/app-macos-latest.zip
+          asset_path: ./dist/*.zip
           asset_name: app-macos-latest.zip
           asset_content_type: application/zip
 
