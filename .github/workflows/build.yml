@@ -6,9 +6,7 @@ on:
       - main
       - dev
       - hotfix/*
-    tags:
-      - '*'
-
+      
 jobs:
   build:
     name: PyInstaller构建
