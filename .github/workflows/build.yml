@@ -6,7 +6,7 @@ on:
       - main
       - dev
       - hotfix/*
-      
+
 jobs:
   build:
     name: PyInstaller构建
@@ -19,8 +19,6 @@ jobs:
     steps:
       - name: Checkout 代码
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
       
       - name: 安装Python
         uses: actions/setup-python@v4
@@ -28,56 +26,24 @@ jobs:
           python-version: ${{ matrix.python-version }}
       
       - name: 安装依赖
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
       
       - name: 安装PyInstaller
-        run: |
-          pip install pyinstaller
+        run: pip install pyinstaller
       
       - name: 通过PyInstaller构建
         run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            pyinstaller --onefile --windowed -y -i icon.ico GUI.py
-          elif [ "$RUNNER_OS" == "Linux" ]; then
-            pyinstaller --onefile --windowed -y -i icon.ico GUI.py
-          elif [ "$RUNNER_OS" == "macOS" ]; then
-            pyinstaller --onefile --windowed -y -i icon.icns GUI.py
-          fi
+          pyinstaller --onefile --windowed -y -i icon.${{ matrix.os == 'windows-latest' && 'ico' || matrix.os == 'macos-latest' && 'icns' }} GUI.py
         shell: bash
       
-      - name: 上传 Windows 工程
-        id: upload-windows-artifact
+      # 注意这里的变化：使用的是工件的名字而不是具体的文件名
+      - name: 上传工程
         uses: actions/upload-artifact@v3
-        if: startsWith(matrix.os, 'windows')
-        with:
-          name: app-${{ matrix.os }}.exe
-          path: dist/*.exe
-      
-      - name: 上传 Linux 工程
-        id: upload-linux-artifact
-        uses: actions/upload-artifact@v3
-        if: startsWith(matrix.os, 'ubuntu')
         with:
           name: app-${{ matrix.os }}
-          path: dist/GUI
+          path: dist/
       
-      - name: 上传 macOS 工程
-        id: upload-macos-artifact
-        uses: actions/upload-artifact@v3
-        if: startsWith(matrix.os, 'macos')
-        with:
-          name: app-${{ matrix.os }}.app
-          path: dist/*.app
-      
-      - name: 压缩 macOS 应用程序
-        if: startsWith(matrix.os, 'macos-latest')
-        run: |
-          cd dist
-          zip -r app-macos.zip *.app # 使用通配符来匹配“.app”目录
-        shell: bash
-      
-      - name: 列出 artifact
+      - name: 列出构建文件
         run: ls -l dist
 
   release:
@@ -89,9 +55,11 @@ jobs:
       
       - name: 自动版本标签
         id: tag_version
-        uses: actions/github-script@v5
+        uses: actions/github-script@v6
         with:
           script: |
+            const path = require('path');
+            const fs = require('fs');
             const { repo: { owner, repo } } = context;
             let tags = await github.rest.repos.listTags({
               owner: owner,
@@ -99,8 +67,7 @@ jobs:
             });
             tags = tags.data.map(tag => tag.name);
             let newTag = 'v1.0.0';
-
-            if (tags.length > 0) {
+           if (tags.length > 0) {
               const latestTag = tags.sort().pop();
               let [major, minor, patch] = latestTag.replace('v', '').split('.').map(num => parseInt(num));
               
@@ -131,52 +98,25 @@ jobs:
                 newTag = `v${major}.${minor}.${patch}`;
               }
             }
-
-            core.setOutput('new_tag', newTag);
+            fs.writeFileSync(process.env.GITHUB_ENV, `NEW_TAG=${newTag}\n`, { flag: 'a' });
       
       - name: 创建发布
-        id: create_release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.tag_version.outputs.new_tag }}
-          release_name: Release ${{ steps.tag_version.outputs.new_tag }}
-          draft: false
+          tag_name: ${{ env.NEW_TAG }}
+          name: Release ${{ env.NEW_TAG }}
+          draft: true
           prerelease: false
-
-      - name: 列出构建文件
-        run: ls -l dist/
       
-      - name: 上传 Windows 构建至发布
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      - name: 下载构建工程
+        uses: actions/download-artifact@v3
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/*.exe
-          asset_name: app-windows-latest.exe
-          asset_content_type: application/octet-stream
+          name: app-${{ matrix.os }}
       
-      - name: 上传 Linux 构建至发布
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      - name: 上传构建至发布
+        uses: softprops/action-gh-release@v1
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/GUI
-          asset_name: app-ubuntu-latest
-          asset_content_type: application/octet-stream
-      
-      - name: 上传 macOS 构建及压缩文件至发布
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/*.zip
-          asset_name: app-macos-latest.zip
-          asset_content_type: application/zip
-
-
-
+          files: dist/*
+          tag_name: ${{ env.NEW_TAG }}
