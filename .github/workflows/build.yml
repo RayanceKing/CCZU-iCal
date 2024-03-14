@@ -113,7 +113,7 @@ jobs:
       - name: 下载构建工程
         uses: actions/download-artifact@v3
         with:
-          name: app-${{ matrix.os }}
+          name: app-*
       
       - name: 上传构建至发布
         uses: softprops/action-gh-release@v1
