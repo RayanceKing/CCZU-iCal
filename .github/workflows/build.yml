@@ -67,7 +67,7 @@ jobs:
             });
             tags = tags.data.map(tag => tag.name);
             let newTag = 'v1.0.0';
-           if (tags.length > 0) {
+            if (tags.length > 0) {
               const latestTag = tags.sort().pop();
               let [major, minor, patch] = latestTag.replace('v', '').split('.').map(num => parseInt(num));
               
@@ -103,7 +103,7 @@ jobs:
       - name: 创建发布
         uses: softprops/action-gh-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           tag_name: ${{ env.NEW_TAG }}
           name: Release ${{ env.NEW_TAG }}
