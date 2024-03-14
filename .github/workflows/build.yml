@@ -136,7 +136,7 @@ jobs:
       
       - name: 创建发布
         id: create_release
-        uses: actions/create-release@v2
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
@@ -159,7 +159,7 @@ jobs:
           asset_content_type: application/octet-stream
       
       - name: 上传 Linux 构建至发布
-        uses: actions/upload-release-asset@v2
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
@@ -169,7 +169,7 @@ jobs:
           asset_content_type: application/octet-stream
       
       - name: 上传 macOS 构建及压缩文件至发布
-        uses: actions/upload-release-asset@v2
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
