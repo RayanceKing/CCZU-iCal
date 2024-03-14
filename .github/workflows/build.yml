@@ -94,26 +94,37 @@ jobs:
         uses: actions/github-script@v5
         with:
           script: |
-            const semver = require('semver');
             const { repo: { owner, repo }, payload: { ref } } = context;
             const oldTag = ref.startsWith('refs/tags/') ? ref.replace('refs/tags/', '') : '';
-            let newTag;
+            let newTag = 'v1.0.0';
+
             if (oldTag) {
-              const parsedVersion = semver.parse(oldTag);
-              if (parsedVersion.patch === 9) {
-                newTag = semver.inc(oldTag, 'minor');
+              const versionParts = oldTag.replace('v', '').split('.');
+              const major = parseInt(versionParts[0], 10);
+              let minor = parseInt(versionParts[1], 10);
+              let patch = parseInt(versionParts[2], 10);
+
+              if (patch === 9) {
+                minor += 1;
+                patch = 0;
               } else {
-                newTag = semver.inc(oldTag, 'patch');
+                patch += 1;
               }
-            } else {
-              newTag = 'v1.0.0';
+
+              newTag = `v${major}.${minor}.${patch}`;
             }
-            const newTagExists = await github.repos.getReleaseByTag({ owner, repo, tag: newTag }).catch(() => false);
+
+            const newTagExists = await github.rest.repos.getReleaseByTag({
+              owner,
+              repo,
+              tag: newTag
+            }).then(() => true, () => false);
+
             if (newTagExists) {
               core.setFailed(`The tag \`${newTag}\` already exists.`);
             }
-            core.setOutput('new_tag', newTagExists ? semver.inc(newTag, 'patch') : newTag);
-          result-encoding: string
+
+            core.setOutput('new_tag', newTag);
       
       - name: 创建发布
         uses: actions/create-release@v1
