@@ -47,7 +47,7 @@ jobs:
         if: ${{ runner.os == 'macos' }}
         uses: actions/upload-artifact@v3
         with:
-          name: CCZU-iCal-macOS_X86
+          name: CCZU-iCal-macOS_x86
           path: dist/*.app
 
       - name: Upload (Linux)
