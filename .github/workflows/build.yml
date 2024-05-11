@@ -35,26 +35,26 @@ jobs:
       
       - name: 通过PyInstaller构建
         run: pyinstaller GUI.spec
-      
+
       - name: Upload (Windows)
         if: ${{ runner.os == 'windows' }}
         uses: actions/upload-artifact@v3
         with:
-          name: CCZU-iCal-win_x86
+          name: CCZU-iCal_windows
           path: dist/*.exe
 
       - name: Upload (macOS)
         if: ${{ runner.os == 'macos' }}
         uses: actions/upload-artifact@v3
         with:
-          name: CCZU-iCal-macOS_x86
+          name: CCZU-iCal_mac_x86
           path: dist/*.app
 
       - name: Upload (Linux)
         if: ${{ runner.os == 'linux' }}
         uses: actions/upload-artifact@v3
         with:
-          name: CCZU-iCal-linux
+          name: CCZU-iCal_linux
           path: dist/*
 
   release:
@@ -69,7 +69,7 @@ jobs:
 
       - name: Move files
         run: |
-          cp -r CCZU-iCal_macOS_x86/CCZU-iCal.app .
+          cp -r CCZU-iCal_mac_x86/CCZU-iCal.app .
           cp CCZU-iCal_windows/CCZU-iCal.exe .
           cp CCZU-iCal_linux/CCZU-iCal .
 
