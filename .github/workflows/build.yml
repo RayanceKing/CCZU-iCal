@@ -14,109 +14,86 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: [3.11.7]
 
     steps:
       - name: Checkout 代码
         uses: actions/checkout@v3
       
       - name: 安装Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v3
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version:  "3.11.7"
       
-      - name: 安装依赖
-        run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
       
       - name: 安装PyInstaller
         run: pip install pyinstaller
       
       - name: 通过PyInstaller构建
-        run: |
-          pyinstaller --onefile --windowed -y -i icon.${{ matrix.os == 'windows-latest' && 'ico' || matrix.os == 'macos-latest' && 'icns' }} GUI.py
-        shell: bash
+        run: pyinstaller GUI.spec
       
-      # 注意这里的变化：使用的是工件的名字而不是具体的文件名
-      - name: 上传工程
+      - name: Upload (Windows)
+        if: ${{ runner.os == 'windows' }}
         uses: actions/upload-artifact@v3
         with:
-          name: app-${{ matrix.os }}
-          path: dist/
-      
-      - name: 列出构建文件
-        run: ls -l dist
+          name: CCZU-iCal-win_x86
+          path: dist/*.exe
+
+      - name: Upload (macOS)
+        if: ${{ runner.os == 'macos' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: CCZU-iCal-macOS_X86
+          path: dist/*.app
+
+      - name: Upload (Linux)
+        if: ${{ runner.os == 'linux' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: CCZU-iCal-linux
+          path: dist/*
 
   release:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout 代码
-        uses: actions/checkout@v3
-      
-      - name: 自动版本标签
-        id: tag_version
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const path = require('path');
-            const fs = require('fs');
-            const { repo: { owner, repo } } = context;
-            let tags = await github.rest.repos.listTags({
-              owner: owner,
-              repo: repo,
-            });
-            tags = tags.data.map(tag => tag.name);
-            let newTag = 'v1.0.0';
-            if (tags.length > 0) {
-              const latestTag = tags.sort().pop();
-              let [major, minor, patch] = latestTag.replace('v', '').split('.').map(num => parseInt(num));
-              
-              if (patch === 9) {
-                minor += 1;
-                patch = 0;
-              } else {
-                patch += 1;
-              }
+      - name: Download
+        uses: actions/download-artifact@v3
 
-              if (minor === 10) {
-                major += 1;
-                minor = 0;
-              }
+      - name: Display files
+        run: ls -R
 
-              newTag = `v${major}.${minor}.${patch}`;
-              while (tags.includes(newTag)) {
-                if (patch === 9) {
-                  minor += 1;
-                  patch = 0;
-                } else {
-                  patch += 1;
-                }
-                if (minor === 10) {
-                  major += 1;
-                  minor = 0;
-                }
-                newTag = `v${major}.${minor}.${patch}`;
-              }
-            }
-            fs.writeFileSync(process.env.GITHUB_ENV, `NEW_TAG=${newTag}\n`, { flag: 'a' });
-      
-      - name: 创建发布
+      - name: Move files
+        run: |
+          cp -r CCZU-iCal_mac/CCZU-iCalr.app .
+          cp CCZU-iCal_windows/CCZU-iCal.exe .
+          cp CCZU-iCal_linux/CCZU-iCal .
+
+      - name: ZIP
+        run: |
+          zip -r CCZU-iCal_mac_x86.zip CCZU-iCal.app
+          zip CCZU-iCal_windows.zip CCZU-iCal.exe
+          zip CCZU-iCal_linux.zip CCZU-iCal
+
+      - name: Release
         uses: softprops/action-gh-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ env.NEW_TAG }}
-          name: Release ${{ env.NEW_TAG }}
+          tag_name: tag
           draft: true
-          prerelease: false
-      
-      - name: 下载构建工程
-        uses: actions/download-artifact@v3
-        with:
-          name: app-*
-      
-      - name: 上传构建至发布
-        uses: softprops/action-gh-release@v1
-        with:
-          files: dist/*
-          tag_name: ${{ env.NEW_TAG }}
+          files: |
+            CCZU-iCal_windows.zip
+            CCZU-iCal_mac_x86.zip
+            CCZU-iCal_linux.zip
+          name: 🎉
+          body: |
+            ## 新增
+            - 新增内容
+            
+            ## 优化
+            - 优化内容
