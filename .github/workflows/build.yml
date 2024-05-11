@@ -69,7 +69,7 @@ jobs:
 
       - name: Move files
         run: |
-          cp -r CCZU-iCal_mac/CCZU-iCalr.app .
+          cp -r CCZU-iCal_mac_x86/CCZU-iCalr.app .
           cp CCZU-iCal_windows/CCZU-iCal.exe .
           cp CCZU-iCal_linux/CCZU-iCal .
 
