@@ -36,7 +36,9 @@ jobs:
       - name: 通过PyInstaller构建
         run: |
           pyinstaller GUI.spec
-          ls -l dist
+      
+      - name: 检查构建结果
+        run: ls -R
 
       - name: Upload (Windows)
         if: ${{ runner.os == 'windows' }}
