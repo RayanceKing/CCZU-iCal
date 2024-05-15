@@ -24,7 +24,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='CCZU-iCal',
+    name='CCZUiCal',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -42,7 +42,7 @@ exe = EXE(
 )
 app = BUNDLE(
     exe,
-    name='CCZU-iCal.app',
+    name='CCZUiCal.app',
     icon='image/icon.icns',
     bundle_identifier=None,
     version='1.0.2'

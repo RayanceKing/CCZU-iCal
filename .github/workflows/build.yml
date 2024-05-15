@@ -40,21 +40,21 @@ jobs:
         if: ${{ runner.os == 'windows' }}
         uses: actions/upload-artifact@v3
         with:
-          name: CCZU-iCal_windows
+          name: CCZUiCal_windows
           path: dist/*.exe
 
       - name: Upload (macOS)
         if: ${{ runner.os == 'macos' }}
         uses: actions/upload-artifact@v3
         with:
-          name: CCZU-iCal_mac_x86
+          name: CCZUiCal_mac_x86
           path: dist/*.app
 
       - name: Upload (Linux)
         if: ${{ runner.os == 'linux' }}
         uses: actions/upload-artifact@v3
         with:
-          name: CCZU-iCal_linux
+          name: CCZUiCal_linux
           path: dist/*
 
   release:
@@ -69,15 +69,15 @@ jobs:
 
       - name: Move files
         run: |
-          cp -r CCZU-iCal_mac_x86/CCZU-iCal.app .
-          cp CCZU-iCal_windows/CCZU-iCal.exe .
-          cp CCZU-iCal_linux/CCZU-iCal .
+          cp -r CCZUiCal_mac_x86/CCZUiCal.app .
+          cp CCZUiCal_windows/CCZUiCal.exe .
+          cp CCZUiCal_linux/CCZUiCal .
 
       - name: ZIP
         run: |
-          zip -r CCZU-iCal_mac_x86.zip CCZU-iCal.app
-          zip CCZU-iCal_windows.zip CCZU-iCal.exe
-          zip CCZU-iCal_linux.zip CCZU-iCal
+          zip -r CCZUiCal_mac_x86.zip CCZUiCal.app
+          zip CCZUiCal_windows.zip CCZUiCal.exe
+          zip CCZUiCal_linux.zip CCZUiCal
 
       - name: Release
         uses: softprops/action-gh-release@v1
@@ -87,9 +87,9 @@ jobs:
           tag_name: tag
           draft: true
           files: |
-            CCZU-iCal_windows.zip
-            CCZU-iCal_mac_x86.zip
-            CCZU-iCal_linux.zip
+            CCZUiCal_windows.zip
+            CCZUiCal_mac_x86.zip
+            CCZUiCal_linux.zip
           name: 🎉
           body: |
             ## 新增
