@@ -43,7 +43,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: CCZUiCal_windows
-          path: dist/CCZUiCal.exe
+          path: dist/*.exe
 
       - name: Upload (macOS)
         if: ${{ runner.os == 'macos' }}
