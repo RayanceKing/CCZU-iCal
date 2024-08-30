@@ -20,7 +20,7 @@ git clone git@github.com:Student-WangYL/CCZU-iCal.git
 cd CCZU-iCal
 
 # 创建虚拟环境
-python -m venv .venv
+conda create -n CCZUiCal
 .\.venv\Scripts\activate     # Windows
 source ./.venv/bin/activate  # Linux & macOS
 
